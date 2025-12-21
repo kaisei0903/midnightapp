@@ -62,7 +62,7 @@
             box-shadow: 0 0 8px 2px var(--rest-glow) !important;
         }
 
-        /* ▼▼▼ 追加: 自分の部屋の明かり（窓ガラスへの反射と枠の照り返し） ▼▼▼ */
+        /* 自分の部屋の明かり（窓ガラスへの反射と枠の照り返し） */
         .room-reflection {
             position: absolute;
             top: 0; left: 0;
@@ -86,7 +86,6 @@
         .room-reflection.is-active {
             opacity: 1;
         }
-        /* ▲▲▲ 追加終了 ▲▲▲ */
 
         /* UI */
         .dashboard { 
@@ -258,7 +257,8 @@
         <div v-for="(isOn, index) in windows" :key="index" class="light" 
             :class="['w-' + index, { 
                 'is-active': isOn && index !== myRoomIndex, 
-                'is-dev-room': index === 14,
+                /* 電気がついている時だけ青いスタイルを適用する */
+                'is-dev-room': index === 14 && isOn,
                 'is-resting': isResting && index === myRoomIndex
             }]"></div>
     </div>
