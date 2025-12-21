@@ -12,6 +12,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com/css2">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --light-base: rgba(255, 240, 150, 0.6); 
@@ -52,20 +56,52 @@
         .light.is-active { opacity: 1; }
         .light.is-dev-room { background-color: var(--light-dev) !important; box-shadow: 0 0 10px 2px var(--dev-glow) !important; z-index: 3; }
 
-        /* ★休憩中の窓スタイル */
+        /* 休憩中の窓スタイル */
         .light.is-resting {
             background-color: var(--light-rest) !important;
             box-shadow: 0 0 8px 2px var(--rest-glow) !important;
         }
 
+        /* ▼▼▼ 追加: 自分の部屋の明かり（窓ガラスへの反射と枠の照り返し） ▼▼▼ */
+        .room-reflection {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10; /* 背景画像より手前、UIより奥 */
+            pointer-events: none; /* クリックを透過 */
+            opacity: 0;
+            transition: opacity 2s ease-in-out; /* ふんわり点灯 */
+            
+            /* A案: グレア (下方向＝手元から広がる温かい光の反射) */
+            background: radial-gradient(circle at 50% 150%, rgba(255, 200, 100, 0.2), transparent 70%);
+            
+            /* B案: 窓枠の照り返し (画面縁の内側がぼんやり光る) */
+            box-shadow: inset 0 0 80px rgba(255, 210, 120, 0.15);
+            
+            /* 全体の色味を少し暖色に寄せるフィルター */
+            backdrop-filter: sepia(20%) brightness(1.1);
+        }
+        
+        /* 点灯状態 */
+        .room-reflection.is-active {
+            opacity: 1;
+        }
+        /* ▲▲▲ 追加終了 ▲▲▲ */
+
         /* UI */
         .dashboard { 
-            position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); z-index: 100; 
+            position: absolute; 
+            /* 配置ロジック整理（横揺れ防止） */
+            left: 50%; 
+            bottom: 5%; 
+            transform: translateX(-50%); /* 常にX軸は中央 */
+            
+            z-index: 100; 
             display: flex; flex-direction: row; align-items: center; gap: 20px; 
             background: var(--ui-bg); padding: 8px 24px; border-radius: 30px; 
             backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.05); 
-            /* アニメーション用プロパティ */
-            transition: opacity 0.5s, transform 0.5s, bottom 0.5s; 
+            /* トランジション調整 */
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .dashboard.focus-mode { opacity: 0.4; } .dashboard.focus-mode:hover { opacity: 1; }
         
@@ -111,46 +147,86 @@
         /* 時計モード用のスタイル */
         /* 時計モード時のダッシュボード */
         #app.clock-mode .dashboard {
-            bottom: 50%;
-            transform: translate(-50%, 50%) scale(1.2); /* 中央配置と拡大 */
+            /* 配置ロジック変更 (X軸維持、Y軸中央へ) */
+            top: 50%; 
+            bottom: auto;
+            transform: translate(-50%, -50%); /* X:-50% Y:-50% */
+            
+            width: 100%; 
+            height: 100%;
+            
+            justify-content: center;
             flex-direction: column;
             gap: 25px;
-            /* パディングを削除して最大幅に */
             padding: 0;
-            width: 100%;
-            /* 背景、枠線、影、ぼかしを透明/無効化 */
+            
             background: transparent;
             border: none;
             box-shadow: none;
             backdrop-filter: none;
         }
         /* 時計モード時のタイマー文字サイズ */
-        /* ▼▼▼ 変更: 極細(100)、文字間隔標準(0)で背景を見やすく ▼▼▼ */
+        /* 極細(100)、文字間隔標準(0)で背景を見やすく */
         #app.clock-mode .timer-display { 
             font-size: 22vw; 
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            /* Webフォント 'Inter' を優先指定 */
+            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             font-weight: 100;
             letter-spacing: 0;
             line-height: 1; 
             text-shadow: 0 0 30px rgba(0,0,0,0.8);
             width: 100%;
             text-align: center;
+            font-variant-numeric: tabular-nums;
         }
         /* 時計モード時に不要な要素を隠す */
         #app.clock-mode .info-group,
-        /* .mode-text(UP/POMO) は時計モードでも表示させるため除外 */
-        #app.clock-mode .controls button:not(.toggle-view-btn):not(.primary) { display: none; }
+        #app.clock-mode .controls button:not(.icon-btn):not(.primary) { display: none; }
         
         /* 時計モード時のコントロール配置調整 */
-        #app.clock-mode .controls { gap: 15px; flex-direction: column; }
-        
-        /* 表示切替ボタンのスタイル */
-        .toggle-view-btn {
-            background: none; border: 1px solid rgba(255,255,255,0.3); color: #aaa;
-            padding: 10px 20px; border-radius: 30px; font-size: 12px; cursor: pointer;
-            transition: all 0.3s; margin-top: 10px;
+        #app.clock-mode .controls { 
+            /* 絶対配置で画面下へ移動し、数字と分離 */
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            
+            gap: 10px; 
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center;
         }
-        .toggle-view-btn:hover { border-color: #fff; color: #fff; }
+        
+        /* アイコンボタンのスタイル */
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #eee;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.2s;
+            padding: 0;
+            /* 通常時は薄くして主張を弱める & 上に余白 */
+            opacity: 0.3;
+            margin-top: 20px;
+        }
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: #fff;
+            transform: scale(1.1);
+            /* ホバー時にハッキリ表示 */
+            opacity: 1;
+        }
+        /* SVGアイコンのスタイル */
+        .icon-btn svg {
+            width: 20px; height: 20px;
+            stroke: currentColor;
+            stroke-width: 1.5; /* 細めの線画 */
+            fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
 
         /* 座標設定 */
         .w-0 { top: 22%; left: 21%; width: 3%; height: 4%; } .w-1 { top: 33%; left: 21%; width: 3%; height: 4%; } .w-2 { top: 44.5%; left: 21%; width: 3%; height: 4%; } .w-3 { top: 22%; left: 26.3%; width: 3%; height: 4%; } .w-4 { top: 33%; left: 26.3%; width: 2.8%; height: 4.1%; } .w-5 { top: 44.5%; left: 26.3%; width: 2.8%; height: 4%; }
@@ -170,17 +246,20 @@
 
     <img src="bg.jpg" class="bg-image">
 
+    <div class="room-reflection" :class="{ 'is-active': isRunning }"></div>
+
     <div class="tab-nav">
         <div class="tab-btn" v-if="!isRunning && !isResting" :class="{ active: currentTab === 'room' }" @click="currentTab = 'room'">ROOM</div>
         
         <div class="tab-btn" v-if="!isRunning && !isResting" :class="{ active: currentTab === 'stats' }" @click="openStats">RECORDS</div>
     </div>
+    
     <div class="lights-layer">
         <div v-for="(isOn, index) in windows" :key="index" class="light" 
             :class="['w-' + index, { 
                 'is-active': isOn && index !== myRoomIndex, 
                 'is-dev-room': index === 14,
-                'is-resting': isResting && index === myRoomIndex /* 休憩中は自分の窓が青くなる */
+                'is-resting': isResting && index === myRoomIndex
             }]"></div>
     </div>
     
@@ -193,23 +272,28 @@
         <div class="timer-display">{{ formattedTime }}</div>
         
         <div class="controls">
-            <div v-if="!isRunning && !isResting" style="display:flex; gap:8px;">
-                <span class="mode-text" @click="setMode('countup')" :style="{ color: mode==='countup' ? '#fff' : '#666' }">UP</span>
-                <span class="mode-text" @click="setMode('pomodoro')" :style="{ color: mode==='pomodoro' ? '#fff' : '#666' }">POMO</span>
-            </div>
-
             <button class="primary" @click="handleMainButton">
                 {{ isResting ? 'SKIP BREAK' : (isRunning ? 'STOP' : 'START') }}
             </button>
             
             <button v-if="!isRunning && !isResting && time > 0" @click="resetTimer">✕</button>
 
-            <button v-if="!isClockMode" @click="isClockMode = true" style="margin-left: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 15px;">
-                CLOCK VIEW
+            <button v-if="!isClockMode" class="icon-btn" @click="isClockMode = true" title="Maximize">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15 3h6v6"></path>
+                    <path d="M9 21H3v-6"></path>
+                    <path d="M21 3l-7 7"></path>
+                    <path d="M3 21l7-7"></path>
+                </svg>
             </button>
 
-            <button v-if="isClockMode" class="toggle-view-btn" @click="isClockMode = false">
-                🔍 VIEW APARTMENT
+            <button v-if="isClockMode" class="icon-btn" @click="isClockMode = false" title="Minimize">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 14h6v6"></path>
+                    <path d="M20 10h-6V4"></path>
+                    <path d="M14 10l7-7"></path>
+                    <path d="M10 14l-7 7"></path>
+                </svg>
             </button>
         </div>
     </div>
@@ -228,8 +312,7 @@
         <div style="margin-top: 15px; font-size: 10px; color: #444; font-family: monospace;">
             ID: {{ userId }} <span @click="importUser" style="cursor: pointer; text-decoration: underline; margin-left: 5px; color: #666;">[SYNC]</span>
         </div>
-
-        </div>
+    </div>
 </div>
 
 <script type="module">
