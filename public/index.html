@@ -72,13 +72,11 @@
             opacity: 0;
             transition: opacity 2s ease-in-out; /* ふんわり点灯 */
             
-            /* A案: グレア (下方向＝手元から広がる温かい光の反射) */
+            /* A案: グレア */
             background: radial-gradient(circle at 50% 150%, rgba(255, 200, 100, 0.2), transparent 70%);
-            
-            /* B案: 窓枠の照り返し (画面縁の内側がぼんやり光る) */
+            /* B案: 窓枠の照り返し */
             box-shadow: inset 0 0 80px rgba(255, 210, 120, 0.15);
-            
-            /* 全体の色味を少し暖色に寄せるフィルター */
+            /* フィルター */
             backdrop-filter: sepia(20%) brightness(1.1);
         }
         
@@ -312,6 +310,10 @@
         <div style="margin-top: 15px; font-size: 10px; color: #444; font-family: monospace;">
             ID: {{ userId }} <span @click="importUser" style="cursor: pointer; text-decoration: underline; margin-left: 5px; color: #666;">[SYNC]</span>
         </div>
+        
+        <div style="margin-top: 10px; font-size: 9px; color: #333; cursor: pointer; text-decoration: underline;" @click="forceResetLights">
+            [RESET ALL LIGHTS]
+        </div>
     </div>
 </div>
 
@@ -362,6 +364,9 @@
             const isResting = vueRef(false);
             const time = vueRef(0);
             const timerInterval = vueRef(null);
+            // ▼▼▼ 追加: ハートビート用 ▼▼▼
+            const heartbeatInterval = vueRef(null);
+            // ▲▲▲ 追加終了 ▲▲▲
             const mode = vueRef('countup');
             const myRoomIndex = vueRef(null);
             
@@ -395,7 +400,28 @@
                         windows.value = newStatus;
                     } else windows.value = new Array(30).fill(false);
                 });
+                // ▼▼▼ 追加: ゾンビデータ掃除 ▼▼▼
+                cleanupZombies();
+                // ▲▲▲ 追加終了 ▲▲▲
             });
+
+            // ▼▼▼ 追加: ゾンビ掃除ロジック ▼▼▼
+            const cleanupZombies = async () => {
+                const hbRef = ref(db, 'window_heartbeats');
+                const snapshot = await get(hbRef);
+                if (snapshot.exists()) {
+                    const heartbeats = snapshot.val();
+                    const now = Date.now();
+                    const FIVE_MINUTES = 5 * 60 * 1000;
+                    Object.keys(heartbeats).forEach(index => {
+                        if (now - heartbeats[index] > FIVE_MINUTES) {
+                            set(ref(db, 'windows/' + index), false);
+                            set(ref(db, 'window_heartbeats/' + index), null);
+                        }
+                    });
+                }
+            };
+            // ▲▲▲ 追加終了 ▲▲▲
 
             const saveProgress = () => {
                 isSaved.value = false;
@@ -444,6 +470,11 @@
                 turnOnMyLight();
                 sessionStartTime.value = Date.now();
                 
+                // ▼▼▼ 追加: ハートビート開始 ▼▼▼
+                updateHeartbeat();
+                heartbeatInterval.value = setInterval(updateHeartbeat, 60 * 1000);
+                // ▲▲▲ 追加終了 ▲▲▲
+                
                 timerInterval.value = setInterval(() => {
                     time.value++;
                     if (!isResting.value) {
@@ -458,6 +489,16 @@
                     }
                 }, 1000);
             };
+
+            // ▼▼▼ 追加: ハートビート更新 ▼▼▼
+            const updateHeartbeat = () => {
+                if (myRoomIndex.value !== null) {
+                    const hbRef = ref(db, 'window_heartbeats/' + myRoomIndex.value);
+                    set(hbRef, Date.now());
+                    onDisconnect(hbRef).remove();
+                }
+            };
+            // ▲▲▲ 追加終了 ▲▲▲
 
             const startRest = () => {
                 logSession(time.value);
@@ -475,6 +516,14 @@
             const stopTimer = () => {
                 isRunning.value = false;
                 clearInterval(timerInterval.value);
+                
+                // ▼▼▼ 追加: ハートビート停止 ▼▼▼
+                clearInterval(heartbeatInterval.value);
+                if (myRoomIndex.value !== null) {
+                    set(ref(db, 'window_heartbeats/' + myRoomIndex.value), null);
+                }
+                // ▲▲▲ 追加終了 ▲▲▲
+
                 turnOffMyLight();
                 if (!isResting.value && time.value > 0) {
                     saveProgress();
@@ -551,7 +600,15 @@
                 }
             };
 
-            return { windows, activeNeighbors, isRunning, isResting, time, mode, formattedTime, formattedTotalTime, setMode, handleMainButton, resetTimer, myRoomIndex, isSaved, currentTab, chartPeriod, hasNoLogs, openStats, renderChart, userId, importUser, isClockMode };
+            const forceResetLights = () => {
+                if (confirm("Fix 'Stuck Lights'?\n(All windows will be turned off.)")) {
+                    set(ref(db, 'windows'), null);
+                    set(ref(db, 'window_heartbeats'), null); // ハートビートも消す
+                    alert("Database cleared.");
+                }
+            };
+
+            return { windows, activeNeighbors, isRunning, isResting, time, mode, formattedTime, formattedTotalTime, setMode, handleMainButton, resetTimer, myRoomIndex, isSaved, currentTab, chartPeriod, hasNoLogs, openStats, renderChart, userId, importUser, isClockMode, forceResetLights };
         }
     }).mount('#app');
 </script>
