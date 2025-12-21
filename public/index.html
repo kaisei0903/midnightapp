@@ -32,10 +32,15 @@
         
         #app { 
             position: relative; 
-            width: 100%; 
-            aspect-ratio: 16 / 9;
-            max-height: 100vh; max-width: 177.78vh; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            /* iPad対応（画面内に収める） */
+            width: 100%; height: 100%;
+            max-width: 177.78vh; /* 16:9 の最大幅 */
+            max-height: 56.25vw; /* 16:9 の最大高さ */
+            margin: auto;
+            
+            /* 白い線の原因となる影を削除 */
+            box-shadow: none;
+            
             background: #000;
         }
 
@@ -59,7 +64,8 @@
             display: flex; flex-direction: row; align-items: center; gap: 20px; 
             background: var(--ui-bg); padding: 8px 24px; border-radius: 30px; 
             backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.05); 
-            transition: opacity 0.5s; 
+            /* アニメーション用プロパティ */
+            transition: opacity 0.5s, transform 0.5s, bottom 0.5s; 
         }
         .dashboard.focus-mode { opacity: 0.4; } .dashboard.focus-mode:hover { opacity: 1; }
         
@@ -85,7 +91,7 @@
         button.primary:hover { background: rgba(255, 204, 0, 0.1); border-color: var(--ui-accent); }
         .mode-text { font-size: 10px; color: #888; cursor: pointer; } .mode-text:hover { color: #ccc; }
 
-        .tab-nav { position: absolute; top: 20px; left: 20px; z-index: 101; display: flex; gap: 10px; }
+        .tab-nav { position: absolute; top: 20px; left: 20px; z-index: 101; display: flex; gap: 10px; transition: opacity 0.3s; }
         .tab-btn { background: var(--ui-bg); border: 1px solid rgba(255,255,255,0.1); color: #aaa; padding: 8px 16px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); cursor: pointer; }
         .tab-btn.active { color: var(--ui-accent); border-color: var(--ui-accent); font-weight: bold; }
 
@@ -102,6 +108,51 @@
         @media (orientation: portrait) { #rotate-message { display: flex; } #app { display: none; } }
         @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
 
+        /* 時計モード用のスタイル */
+        /* 時計モード時のダッシュボード */
+        #app.clock-mode .dashboard {
+            bottom: 50%;
+            transform: translate(-50%, 50%) scale(1.2); /* 中央配置と拡大 */
+            flex-direction: column;
+            gap: 25px;
+            /* パディングを削除して最大幅に */
+            padding: 0;
+            width: 100%;
+            /* 背景、枠線、影、ぼかしを透明/無効化 */
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+        /* 時計モード時のタイマー文字サイズ */
+        /* ▼▼▼ 変更: 極細(100)、文字間隔標準(0)で背景を見やすく ▼▼▼ */
+        #app.clock-mode .timer-display { 
+            font-size: 22vw; 
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-weight: 100;
+            letter-spacing: 0;
+            line-height: 1; 
+            text-shadow: 0 0 30px rgba(0,0,0,0.8);
+            width: 100%;
+            text-align: center;
+        }
+        /* 時計モード時に不要な要素を隠す */
+        #app.clock-mode .info-group,
+        /* ▼▼▼ 変更: .mode-text(UP/POMO) は時計モードでも表示させるため除外 ▼▼▼ */
+        #app.clock-mode .controls button:not(.toggle-view-btn):not(.primary) { display: none; }
+        /* ▲▲▲ 変更終了 ▲▲▲ */
+        
+        /* 時計モード時のコントロール配置調整 */
+        #app.clock-mode .controls { gap: 15px; flex-direction: column; }
+        
+        /* 表示切替ボタンのスタイル */
+        .toggle-view-btn {
+            background: none; border: 1px solid rgba(255,255,255,0.3); color: #aaa;
+            padding: 10px 20px; border-radius: 30px; font-size: 12px; cursor: pointer;
+            transition: all 0.3s; margin-top: 10px;
+        }
+        .toggle-view-btn:hover { border-color: #fff; color: #fff; }
+
         /* 座標設定 */
         .w-0 { top: 22%; left: 21%; width: 3%; height: 4%; } .w-1 { top: 33%; left: 21%; width: 3%; height: 4%; } .w-2 { top: 44.5%; left: 21%; width: 3%; height: 4%; } .w-3 { top: 22%; left: 26.3%; width: 3%; height: 4%; } .w-4 { top: 33%; left: 26.3%; width: 2.8%; height: 4.1%; } .w-5 { top: 44.5%; left: 26.3%; width: 2.8%; height: 4%; }
         .w-6 { top: 22%; left: 32%; width: 1.5%; height: 4%; } .w-7 { top: 33%; left: 32%; width: 1.5%; height: 4%; } .w-8 { top: 44.5%; left: 32%; width: 1.5%; height: 4%; } .w-9 { top: 22%; left: 38.7%; width: 4%; height: 4%; } .w-10 { top: 33%; left: 38.7%; width: 4%; height: 4%; } .w-11 { top: 44.5%; left: 38.7%; width: 4%; height: 4%; }
@@ -117,13 +168,12 @@
 <div id="rotate-message"><div class="rotate-icon">📱</div><p>Please rotate your device<br>to enter the apartment.</p></div>
 
 <div id="app">
+
     <img src="bg.jpg" class="bg-image">
 
-    <div class="tab-nav" v-if="!isRunning && !isResting">
-        <div class="tab-btn" :class="{ active: currentTab === 'room' }" @click="currentTab = 'room'">ROOM</div>
-        <div class="tab-btn" :class="{ active: currentTab === 'stats' }" @click="openStats">RECORDS</div>
+    <div class="tab-nav">
+        <div class="tab-btn" v-if="!isRunning && !isResting" :class="{ active: currentTab === 'stats' }" @click="openStats">RECORDS</div>
     </div>
-    
     <div class="lights-layer">
         <div v-for="(isOn, index) in windows" :key="index" class="light" 
             :class="['w-' + index, { 
@@ -152,6 +202,14 @@
             </button>
             
             <button v-if="!isRunning && !isResting && time > 0" @click="resetTimer">✕</button>
+
+            <button v-if="!isClockMode" @click="isClockMode = true" style="margin-left: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 15px;">
+                CLOCK VIEW
+            </button>
+
+            <button v-if="isClockMode" class="toggle-view-btn" @click="isClockMode = false">
+                🔍 VIEW APARTMENT
+            </button>
         </div>
     </div>
 
@@ -177,7 +235,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, onValue, onDisconnect, push, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-    import { createApp, ref as vueRef, computed, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+    import { createApp, ref as vueRef, computed, onMounted, watch } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyApsAaSIFEh1BhRgl_sFPssLMOPLjnOqaE",
@@ -206,10 +264,19 @@
             const chartPeriod = vueRef('day');
             const hasNoLogs = vueRef(false);
             let chartInstance = null; 
+            
+            const isClockMode = vueRef(true);
+
+            // isClockModeの変更を監視し、手動で#appにクラスを付与する
+            watch(isClockMode, (newVal) => {
+                const appEl = document.getElementById('app');
+                if (newVal) appEl.classList.add('clock-mode');
+                else appEl.classList.remove('clock-mode');
+            }, { immediate: true });
 
             const windows = vueRef(new Array(30).fill(false));
             const isRunning = vueRef(false);
-            const isResting = vueRef(false); // ★休憩モードフラグ
+            const isResting = vueRef(false);
             const time = vueRef(0);
             const timerInterval = vueRef(null);
             const mode = vueRef('countup');
@@ -279,14 +346,13 @@
                 }
             };
 
-            // メインボタンの挙動（開始/停止/休憩スキップ）
             const handleMainButton = () => {
                 if (isResting.value) {
-                    finishRest(); // 休憩スキップ
+                    finishRest(); 
                 } else if (isRunning.value) {
-                    stopTimer();  // 作業停止
+                    stopTimer(); 
                 } else {
-                    startTimer(); // 作業開始
+                    startTimer(); 
                 }
             };
 
@@ -297,41 +363,29 @@
                 
                 timerInterval.value = setInterval(() => {
                     time.value++;
-                    
-                    // 作業中のみ時間を累積＆保存
                     if (!isResting.value) {
                         totalSeconds.value++;
                         if (time.value % 10 === 0) saveProgress();
                     }
-
-                    // ポモドーロ終了判定 -> 休憩へ
                     if (!isResting.value && mode.value === 'pomodoro' && time.value >= POMODORO_TIME) {
                         startRest();
                     }
-                    
-                    // 休憩終了判定
                     if (isResting.value && time.value >= REST_TIME) {
                         finishRest();
                     }
-
                 }, 1000);
             };
 
             const startRest = () => {
-                // 作業ログを保存してリセット
                 logSession(time.value);
                 saveProgress();
-                
-                // 休憩モード開始
                 isResting.value = true;
-                time.value = 0; // 休憩タイマーは0からスタート
-                
-                // ここで窓の色を変える（CSSクラス is-resting が適用される）
+                time.value = 0; 
             };
 
             const finishRest = () => {
                 isResting.value = false;
-                stopTimer(); // タイマーを完全に止める
+                stopTimer(); 
                 alert('Break is over. Ready to focus?');
             };
 
@@ -339,13 +393,10 @@
                 isRunning.value = false;
                 clearInterval(timerInterval.value);
                 turnOffMyLight();
-                
-                // 作業中だった場合のみログ保存（休憩スキップ時は何もしない）
                 if (!isResting.value && time.value > 0) {
                     saveProgress();
                     logSession(time.value);
                 }
-                // リセット
                 isResting.value = false;
             };
 
@@ -355,14 +406,8 @@
             
             const formattedTime = computed(() => {
                 let s = time.value;
-                if (isResting.value) {
-                    // 休憩中は「残り時間」を表示
-                    s = Math.max(0, REST_TIME - time.value);
-                } else if (mode.value === 'pomodoro') {
-                    // ポモドーロ中は「残り時間」を表示
-                    s = Math.max(0, POMODORO_TIME - time.value);
-                }
-                // CountUpモードならそのまま
+                if (isResting.value) s = Math.max(0, REST_TIME - time.value);
+                else if (mode.value === 'pomodoro') s = Math.max(0, POMODORO_TIME - time.value);
                 const m = Math.floor(s / 60); const sec = s % 60;
                 return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
             });
@@ -373,7 +418,6 @@
             });
             const setMode = (m) => { mode.value = m; resetTimer(); };
 
-            // Stats Logic
             const openStats = () => { currentTab.value = 'stats'; renderChart('day'); };
             const renderChart = async (period) => {
                 chartPeriod.value = period;
@@ -389,18 +433,11 @@
                     logs.forEach(log => { const k = new Date(log.start).toISOString().split('T')[0]; if (grouped[k] !== undefined) grouped[k] += log.duration; });
                 } else if (period === 'week') {
                     for (let i = 7; i >= 0; i--) { 
-                        const d = new Date(); 
-                        d.setDate(now.getDate() - (i*7)); 
-                        
-                        // 月曜日を計算してラベル化
+                        const d = new Date(); d.setDate(now.getDate() - (i*7)); 
                         const day = d.getDay();
                         const diff = d.getDate() - day + (day == 0 ? -6 : 1);
-                        const monday = new Date(d);
-                        monday.setDate(diff);
-                        
-                        // 末尾に ~ を付与
+                        const monday = new Date(d); monday.setDate(diff);
                         labels.push((monday.getMonth()+1) + '/' + monday.getDate() + '~'); 
-
                         grouped[getWeekKey(d)] = 0; 
                     }
                     logs.forEach(log => { const k = getWeekKey(new Date(log.start)); if (grouped[k] !== undefined) grouped[k] += log.duration; });
@@ -409,14 +446,12 @@
                     logs.forEach(log => { const d = new Date(log.start); const k = d.getFullYear()+'-'+(d.getMonth()+1); if (grouped[k] !== undefined) grouped[k] += log.duration; });
                 }
                 
-                // ▼▼▼ 変更点: 秒 -> 時間 (小数点第1位) ▼▼▼
                 Object.values(grouped).forEach(v => dataPoints.push(parseFloat((v/3600).toFixed(1))));
 
                 const ctx = document.getElementById('statsChart').getContext('2d');
                 if (chartInstance) chartInstance.destroy();
                 chartInstance = new Chart(ctx, {
                     type: 'bar',
-                    // ▼▼▼ 変更点: ラベルを 'Hours' に変更 ▼▼▼
                     data: { labels, datasets: [{ label: 'Hours', data: dataPoints, backgroundColor: 'rgba(255, 204, 0, 0.5)', borderColor: 'rgba(255, 204, 0, 1)', borderWidth: 1 }] },
                     options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
                 });
@@ -433,7 +468,7 @@
                 }
             };
 
-            return { windows, activeNeighbors, isRunning, isResting, time, mode, formattedTime, formattedTotalTime, setMode, handleMainButton, resetTimer, myRoomIndex, isSaved, currentTab, chartPeriod, hasNoLogs, openStats, renderChart, userId, importUser };
+            return { windows, activeNeighbors, isRunning, isResting, time, mode, formattedTime, formattedTotalTime, setMode, handleMainButton, resetTimer, myRoomIndex, isSaved, currentTab, chartPeriod, hasNoLogs, openStats, renderChart, userId, importUser, isClockMode };
         }
     }).mount('#app');
 </script>
