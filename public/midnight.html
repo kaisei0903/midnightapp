@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quiet Apartment</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Quiet Apartment">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --light-base: rgba(255, 240, 150, 0.6); 
+            --light-glow: rgba(255, 220, 80, 0.5);
+            --light-dev:  rgba(200, 240, 255, 0.8);
+            --dev-glow:   rgba(100, 200, 255, 0.6);
+            
+            /* ★休憩モードの色（青白く落ち着いた光） */
+            --light-rest: rgba(150, 230, 255, 0.6);
+            --rest-glow:  rgba(80, 200, 255, 0.4);
+
+            --ui-bg: rgba(0, 0, 0, 0.7);
+            --ui-text: #eee;
+            --ui-accent: #ffcc00;
+            --ui-rest:    #00ccff; /* 休憩中のUIアクセントカラー */
+        }
+        body { margin: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: var(--ui-text); font-family: 'Helvetica Neue', Arial, sans-serif; touch-action: none; }
+        
+        #app { 
+            position: relative; 
+            width: 100%; 
+            aspect-ratio: 16 / 9;
+            max-height: 100vh; max-width: 177.78vh; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            background: #000;
+        }
+
+        .bg-image { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1; image-rendering: pixelated; filter: brightness(0.65) contrast(1.1); }
+        .lights-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        
+        /* 通常の窓 */
+        .light { position: absolute; background-color: var(--light-base); box-shadow: 0 0 6px 1px var(--light-glow); mix-blend-mode: screen; opacity: 0; transition: opacity 3s ease-in-out, background-color 3s; }
+        .light.is-active { opacity: 1; }
+        .light.is-dev-room { background-color: var(--light-dev) !important; box-shadow: 0 0 10px 2px var(--dev-glow) !important; z-index: 3; }
+
+        /* ★休憩中の窓スタイル */
+        .light.is-resting {
+            background-color: var(--light-rest) !important;
+            box-shadow: 0 0 8px 2px var(--rest-glow) !important;
+        }
+
+        /* UI */
+        .dashboard { 
+            position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%); z-index: 100; 
+            display: flex; flex-direction: row; align-items: center; gap: 20px; 
+            background: var(--ui-bg); padding: 8px 24px; border-radius: 30px; 
+            backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.05); 
+            transition: opacity 0.5s; 
+        }
+        .dashboard.focus-mode { opacity: 0.4; } .dashboard.focus-mode:hover { opacity: 1; }
+        
+        /* 休憩中のUIスタイル変更 */
+        .dashboard.rest-mode {
+            border-color: var(--ui-rest);
+            box-shadow: 0 0 15px rgba(0, 200, 255, 0.1);
+        }
+        .dashboard.rest-mode .timer-display { color: var(--ui-rest); }
+
+        .info-group { display: flex; flex-direction: column; gap: 2px; }
+        .neighbor-count { font-size: 10px; opacity: 0.5; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .save-status { font-size: 9px; opacity: 0.5; color: #888; margin-left: 2px; }
+        .save-status.saved { color: #4CAF50; }
+        .total-time { font-size: 10px; opacity: 0.7; color: #aaa; letter-spacing: 0.5px; }
+
+        .live-dot { width: 6px; height: 6px; background-color: #4CAF50; border-radius: 50%; box-shadow: 0 0 4px #4CAF50; }
+        .timer-display { font-family: 'Courier New', Courier, monospace; font-size: 24px; font-weight: bold; letter-spacing: 1px; transition: color 0.5s; }
+        .controls { display: flex; gap: 15px; align-items: center; }
+        button { background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 11px; padding: 4px 8px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        button:hover { color: #fff; }
+        button.primary { color: var(--ui-accent); font-weight: bold; border: 1px solid rgba(255, 204, 0, 0.3); border-radius: 15px; padding: 6px 16px; }
+        button.primary:hover { background: rgba(255, 204, 0, 0.1); border-color: var(--ui-accent); }
+        .mode-text { font-size: 10px; color: #888; cursor: pointer; } .mode-text:hover { color: #ccc; }
+
+        .tab-nav { position: absolute; top: 20px; left: 20px; z-index: 101; display: flex; gap: 10px; }
+        .tab-btn { background: var(--ui-bg); border: 1px solid rgba(255,255,255,0.1); color: #aaa; padding: 8px 16px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); cursor: pointer; }
+        .tab-btn.active { color: var(--ui-accent); border-color: var(--ui-accent); font-weight: bold; }
+
+        .stats-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 90; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .stats-screen.visible { opacity: 1; pointer-events: auto; }
+        .chart-container { width: 80%; height: 60%; position: relative; }
+        .period-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .period-btn { font-size: 12px; color: #888; cursor: pointer; padding: 4px 10px; border-bottom: 2px solid transparent; }
+        .period-btn.active { color: #fff; border-bottom-color: var(--ui-accent); }
+        .empty-logs { color: #666; font-size: 12px; margin-top: 20px; }
+
+        #rotate-message { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; }
+        .rotate-icon { font-size: 40px; margin-bottom: 20px; animation: rotatePhone 2s infinite; }
+        @media (orientation: portrait) { #rotate-message { display: flex; } #app { display: none; } }
+        @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
+
+        /* 座標設定 */
+        .w-0 { top: 22%; left: 21%; width: 3%; height: 4%; } .w-1 { top: 33%; left: 21%; width: 3%; height: 4%; } .w-2 { top: 44.5%; left: 21%; width: 3%; height: 4%; } .w-3 { top: 22%; left: 26.3%; width: 3%; height: 4%; } .w-4 { top: 33%; left: 26.3%; width: 2.8%; height: 4.1%; } .w-5 { top: 44.5%; left: 26.3%; width: 2.8%; height: 4%; }
+        .w-6 { top: 22%; left: 32%; width: 1.5%; height: 4%; } .w-7 { top: 33%; left: 32%; width: 1.5%; height: 4%; } .w-8 { top: 44.5%; left: 32%; width: 1.5%; height: 4%; } .w-9 { top: 22%; left: 38.7%; width: 4%; height: 4%; } .w-10 { top: 33%; left: 38.7%; width: 4%; height: 4%; } .w-11 { top: 44.5%; left: 38.7%; width: 4%; height: 4%; }
+        .w-12 { top: 22%; left: 45%; width: 3%; height: 4%; } .w-13 { top: 33%; left: 45%; width: 3%; height: 4%; } 
+        .w-14 { top: 44.5%; left: 45%; width: 3%; height: 4%; } /* Dev Room */
+        .w-15 { top: 22%; left: 50.2%; width: 3%; height: 4%; } .w-16 { top: 33%; left: 50.2%; width: 3%; height: 4%; } .w-17 { top: 44.5%; left: 50.2%; width: 3%; height: 4%; } .w-18 { top: 22%; left: 56.2%; width: 4%; height: 3.7%; } .w-19 { top: 33%; left: 56.2%; width: 4%; height: 3.7%; }
+        .w-20 { top: 44.5%; left: 56.2%; width: 4%; height: 3.6%; } .w-21 { top: 22%; left: 65.4%; width: 1.5%; height: 3.6%; } .w-22 { top: 33%; left: 65.4%; width: 1.5%; height: 3.7%; } .w-23 { top: 44.5%; left: 65.4%; width: 1.5%; height: 3.6%; } .w-24 { top: 22%; left: 69%; width: 2.8%; height: 3.6%; } .w-25 { top: 33%; left: 69%; width: 2.8%; height: 4%; }
+        .w-26 { top: 44.5%; left: 69%; width: 2.8%; height: 3.8%; } .w-27 { top: 22%; left: 75.5%; width: 3.8%; height: 3%; } .w-28 { top: 33%; left: 75.5%; width: 3.8%; height: 3.8%; } .w-29 { top: 44.5%; left: 75.5%; width: 3.8%; height: 3.7%; }
+    </style>
+</head>
+<body>
+
+<div id="rotate-message"><div class="rotate-icon">📱</div><p>Please rotate your device<br>to enter the apartment.</p></div>
+
+<div id="app">
+    <img src="bg.jpg" class="bg-image">
+
+    <div class="tab-nav" v-if="!isRunning && !isResting">
+        <div class="tab-btn" :class="{ active: currentTab === 'room' }" @click="currentTab = 'room'">ROOM</div>
+        <div class="tab-btn" :class="{ active: currentTab === 'stats' }" @click="openStats">RECORDS</div>
+    </div>
+    
+    <div class="lights-layer">
+        <div v-for="(isOn, index) in windows" :key="index" class="light" 
+            :class="['w-' + index, { 
+                'is-active': isOn && index !== myRoomIndex, 
+                'is-dev-room': index === 14,
+                'is-resting': isResting && index === myRoomIndex /* 休憩中は自分の窓が青くなる */
+            }]"></div>
+    </div>
+    
+    <div class="dashboard" :class="{ 'focus-mode': isRunning, 'rest-mode': isResting }" v-show="currentTab === 'room'">
+        <div class="info-group">
+            <div class="neighbor-count"><div class="live-dot"></div>{{ activeNeighbors }} Neighbors</div>
+            <div class="total-time">Total: {{ formattedTotalTime }}<span class="save-status" :class="{ 'saved': isSaved }">●</span></div>
+        </div>
+        
+        <div class="timer-display">{{ formattedTime }}</div>
+        
+        <div class="controls">
+            <div v-if="!isRunning && !isResting" style="display:flex; gap:8px;">
+                <span class="mode-text" @click="setMode('countup')" :style="{ color: mode==='countup' ? '#fff' : '#666' }">UP</span>
+                <span class="mode-text" @click="setMode('pomodoro')" :style="{ color: mode==='pomodoro' ? '#fff' : '#666' }">POMO</span>
+            </div>
+
+            <button class="primary" @click="handleMainButton">
+                {{ isResting ? 'SKIP BREAK' : (isRunning ? 'STOP' : 'START') }}
+            </button>
+            
+            <button v-if="!isRunning && !isResting && time > 0" @click="resetTimer">✕</button>
+        </div>
+    </div>
+
+    <div class="stats-screen" :class="{ visible: currentTab === 'stats' }">
+        <div class="period-selector">
+            <div class="period-btn" :class="{ active: chartPeriod === 'day' }" @click="renderChart('day')">DAY</div>
+            <div class="period-btn" :class="{ active: chartPeriod === 'week' }" @click="renderChart('week')">WEEK</div>
+            <div class="period-btn" :class="{ active: chartPeriod === 'month' }" @click="renderChart('month')">MONTH</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="statsChart"></canvas>
+            <div v-if="hasNoLogs" class="empty-logs">No records yet. Start focusing!</div>
+        </div>
+        
+        <div style="margin-top: 15px; font-size: 10px; color: #444; font-family: monospace;">
+            ID: {{ userId }} <span @click="importUser" style="cursor: pointer; text-decoration: underline; margin-left: 5px; color: #666;">[SYNC]</span>
+        </div>
+
+        <div style="margin-top:20px; color:#aaa; cursor:pointer;" @click="currentTab = 'room'">CLOSE</div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, update, onValue, onDisconnect, push, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { createApp, ref as vueRef, computed, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyApsAaSIFEh1BhRgl_sFPssLMOPLjnOqaE",
+        authDomain: "late-light.firebaseapp.com",
+        databaseURL: "https://late-light-default-rtdb.firebaseio.com",
+        projectId: "late-light",
+        storageBucket: "late-light.firebasestorage.app",
+        messagingSenderId: "785315819458",
+        appId: "1:785315819458:web:feda9dc1fb93f497f6b05b",
+        measurementId: "G-C4HKZB6L22"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    createApp({
+        setup() {
+            const userId = vueRef('');
+            const totalSeconds = vueRef(0);
+            const isDev = vueRef(false);
+            const isSaved = vueRef(true);
+            const DEV_ROOM_INDEX = 14; 
+            const sessionStartTime = vueRef(null);
+            
+            const currentTab = vueRef('room'); 
+            const chartPeriod = vueRef('day');
+            const hasNoLogs = vueRef(false);
+            let chartInstance = null; 
+
+            const windows = vueRef(new Array(30).fill(false));
+            const isRunning = vueRef(false);
+            const isResting = vueRef(false); // ★休憩モードフラグ
+            const time = vueRef(0);
+            const timerInterval = vueRef(null);
+            const mode = vueRef('countup');
+            const myRoomIndex = vueRef(null);
+            
+            const POMODORO_TIME = 25 * 60; // 25分
+            const REST_TIME = 5 * 60;      // 5分
+
+            const initUser = async () => {
+                let id = localStorage.getItem('qa_user_id');
+                if (!id) {
+                    id = 'user_' + Math.random().toString(36).substring(2, 12);
+                    localStorage.setItem('qa_user_id', id);
+                }
+                userId.value = id;
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('role') === 'dev') localStorage.setItem('qa_is_dev', 'true');
+                isDev.value = localStorage.getItem('qa_is_dev') === 'true';
+
+                const userRef = ref(db, 'users/' + id + '/total_seconds');
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) totalSeconds.value = snapshot.val();
+                else set(userRef, 0);
+            };
+
+            onMounted(() => {
+                initUser();
+                onValue(ref(db, 'windows'), (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const newStatus = new Array(30).fill(false);
+                        Object.keys(data).forEach(key => { if (data[key] === true) newStatus[key] = true; });
+                        windows.value = newStatus;
+                    } else windows.value = new Array(30).fill(false);
+                });
+            });
+
+            const saveProgress = () => {
+                isSaved.value = false;
+                update(ref(db, 'users/' + userId.value), { total_seconds: totalSeconds.value, last_active: Date.now() }).then(() => isSaved.value = true);
+            };
+
+            const logSession = (durationSec) => {
+                if (durationSec < 5) return; 
+                push(ref(db, 'users/' + userId.value + '/logs'), { start: sessionStartTime.value, end: Date.now(), duration: durationSec, mode: mode.value });
+            };
+
+            const turnOnMyLight = () => {
+                if (myRoomIndex.value === null) {
+                    if (isDev.value) myRoomIndex.value = DEV_ROOM_INDEX;
+                    else {
+                        let idx; do { idx = Math.floor(Math.random() * 30); } while (idx === DEV_ROOM_INDEX);
+                        myRoomIndex.value = idx;
+                    }
+                }
+                const myLightRef = ref(db, 'windows/' + myRoomIndex.value);
+                set(myLightRef, true);
+                onDisconnect(myLightRef).set(false);
+            };
+
+            const turnOffMyLight = () => {
+                if (myRoomIndex.value !== null) {
+                    const myLightRef = ref(db, 'windows/' + myRoomIndex.value);
+                    set(myLightRef, false);
+                    onDisconnect(myLightRef).cancel();
+                    myRoomIndex.value = null;
+                }
+            };
+
+            // メインボタンの挙動（開始/停止/休憩スキップ）
+            const handleMainButton = () => {
+                if (isResting.value) {
+                    finishRest(); // 休憩スキップ
+                } else if (isRunning.value) {
+                    stopTimer();  // 作業停止
+                } else {
+                    startTimer(); // 作業開始
+                }
+            };
+
+            const startTimer = () => {
+                isRunning.value = true;
+                turnOnMyLight();
+                sessionStartTime.value = Date.now();
+                
+                timerInterval.value = setInterval(() => {
+                    time.value++;
+                    
+                    // 作業中のみ時間を累積＆保存
+                    if (!isResting.value) {
+                        totalSeconds.value++;
+                        if (time.value % 10 === 0) saveProgress();
+                    }
+
+                    // ポモドーロ終了判定 -> 休憩へ
+                    if (!isResting.value && mode.value === 'pomodoro' && time.value >= POMODORO_TIME) {
+                        startRest();
+                    }
+                    
+                    // 休憩終了判定
+                    if (isResting.value && time.value >= REST_TIME) {
+                        finishRest();
+                    }
+
+                }, 1000);
+            };
+
+            const startRest = () => {
+                // 作業ログを保存してリセット
+                logSession(time.value);
+                saveProgress();
+                
+                // 休憩モード開始
+                isResting.value = true;
+                time.value = 0; // 休憩タイマーは0からスタート
+                
+                // ここで窓の色を変える（CSSクラス is-resting が適用される）
+            };
+
+            const finishRest = () => {
+                isResting.value = false;
+                stopTimer(); // タイマーを完全に止める
+                alert('Break is over. Ready to focus?');
+            };
+
+            const stopTimer = () => {
+                isRunning.value = false;
+                clearInterval(timerInterval.value);
+                turnOffMyLight();
+                
+                // 作業中だった場合のみログ保存（休憩スキップ時は何もしない）
+                if (!isResting.value && time.value > 0) {
+                    saveProgress();
+                    logSession(time.value);
+                }
+                // リセット
+                isResting.value = false;
+            };
+
+            const resetTimer = () => { stopTimer(); time.value = 0; };
+            
+            const activeNeighbors = computed(() => windows.value.filter((isOn, index) => isOn && index !== myRoomIndex.value).length);
+            
+            const formattedTime = computed(() => {
+                let s = time.value;
+                if (isResting.value) {
+                    // 休憩中は「残り時間」を表示
+                    s = Math.max(0, REST_TIME - time.value);
+                } else if (mode.value === 'pomodoro') {
+                    // ポモドーロ中は「残り時間」を表示
+                    s = Math.max(0, POMODORO_TIME - time.value);
+                }
+                // CountUpモードならそのまま
+                const m = Math.floor(s / 60); const sec = s % 60;
+                return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+            });
+            
+            const formattedTotalTime = computed(() => {
+                const h = Math.floor(totalSeconds.value / 3600); const m = Math.floor((totalSeconds.value % 3600) / 60);
+                return `${h}h ${m}m`;
+            });
+            const setMode = (m) => { mode.value = m; resetTimer(); };
+
+            // Stats Logic
+            const openStats = () => { currentTab.value = 'stats'; renderChart('day'); };
+            const renderChart = async (period) => {
+                chartPeriod.value = period;
+                const logsRef = ref(db, 'users/' + userId.value + '/logs');
+                const snapshot = await get(logsRef);
+                if (!snapshot.exists()) { hasNoLogs.value = true; if (chartInstance) chartInstance.destroy(); return; }
+                hasNoLogs.value = false;
+                const logs = Object.values(snapshot.val());
+                const now = new Date(); const labels = []; const dataPoints = []; const grouped = {};
+
+                if (period === 'day') {
+                    for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(now.getDate() - i); labels.push((d.getMonth()+1)+'/'+d.getDate()); grouped[d.toISOString().split('T')[0]] = 0; }
+                    logs.forEach(log => { const k = new Date(log.start).toISOString().split('T')[0]; if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                } else if (period === 'week') {
+                    for (let i = 7; i >= 0; i--) { 
+                        const d = new Date(); 
+                        d.setDate(now.getDate() - (i*7)); 
+                        
+                        // 月曜日を計算してラベル化
+                        const day = d.getDay();
+                        const diff = d.getDate() - day + (day == 0 ? -6 : 1);
+                        const monday = new Date(d);
+                        monday.setDate(diff);
+                        
+                        // 末尾に ~ を付与
+                        labels.push((monday.getMonth()+1) + '/' + monday.getDate() + '~'); 
+
+                        grouped[getWeekKey(d)] = 0; 
+                    }
+                    logs.forEach(log => { const k = getWeekKey(new Date(log.start)); if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                } else if (period === 'month') {
+                    for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(now.getMonth()-i); labels.push((d.getMonth()+1)+'月'); grouped[d.getFullYear()+'-'+(d.getMonth()+1)] = 0; }
+                    logs.forEach(log => { const d = new Date(log.start); const k = d.getFullYear()+'-'+(d.getMonth()+1); if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                }
+                
+                // ▼▼▼ 変更点: 秒 -> 時間 (小数点第1位) ▼▼▼
+                Object.values(grouped).forEach(v => dataPoints.push(parseFloat((v/3600).toFixed(1))));
+
+                const ctx = document.getElementById('statsChart').getContext('2d');
+                if (chartInstance) chartInstance.destroy();
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    // ▼▼▼ 変更点: ラベルを 'Hours' に変更 ▼▼▼
+                    data: { labels, datasets: [{ label: 'Hours', data: dataPoints, backgroundColor: 'rgba(255, 204, 0, 0.5)', borderColor: 'rgba(255, 204, 0, 1)', borderWidth: 1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+                });
+            };
+            const getWeekKey = (d) => { const s = new Date(d.getFullYear(), 0, 1); const w = Math.ceil((((d - s) / 86400000) + s.getDay() + 1) / 7); return d.getFullYear() + '-' + w; };
+
+            const importUser = () => {
+                const inputId = prompt("Enter your previous User ID to sync data:", userId.value);
+                if (inputId && inputId !== userId.value) {
+                    if (confirm("Switch user? Current local data will be replaced.")) {
+                        localStorage.setItem('qa_user_id', inputId);
+                        window.location.reload();
+                    }
+                }
+            };
+
+            return { windows, activeNeighbors, isRunning, isResting, time, mode, formattedTime, formattedTotalTime, setMode, handleMainButton, resetTimer, myRoomIndex, isSaved, currentTab, chartPeriod, hasNoLogs, openStats, renderChart, userId, importUser };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
