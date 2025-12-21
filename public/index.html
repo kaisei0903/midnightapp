@@ -138,9 +138,8 @@
         }
         /* 時計モード時に不要な要素を隠す */
         #app.clock-mode .info-group,
-        /* ▼▼▼ 変更: .mode-text(UP/POMO) は時計モードでも表示させるため除外 ▼▼▼ */
+        /* .mode-text(UP/POMO) は時計モードでも表示させるため除外 */
         #app.clock-mode .controls button:not(.toggle-view-btn):not(.primary) { display: none; }
-        /* ▲▲▲ 変更終了 ▲▲▲ */
         
         /* 時計モード時のコントロール配置調整 */
         #app.clock-mode .controls { gap: 15px; flex-direction: column; }
@@ -172,6 +171,8 @@
     <img src="bg.jpg" class="bg-image">
 
     <div class="tab-nav">
+        <div class="tab-btn" v-if="!isRunning && !isResting" :class="{ active: currentTab === 'room' }" @click="currentTab = 'room'">ROOM</div>
+        
         <div class="tab-btn" v-if="!isRunning && !isResting" :class="{ active: currentTab === 'stats' }" @click="openStats">RECORDS</div>
     </div>
     <div class="lights-layer">
@@ -228,8 +229,7 @@
             ID: {{ userId }} <span @click="importUser" style="cursor: pointer; text-decoration: underline; margin-left: 5px; color: #666;">[SYNC]</span>
         </div>
 
-        <div style="margin-top:20px; color:#aaa; cursor:pointer;" @click="currentTab = 'room'">CLOSE</div>
-    </div>
+        </div>
 </div>
 
 <script type="module">
