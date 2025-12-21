@@ -405,23 +405,37 @@
                 // ▲▲▲ 追加終了 ▲▲▲
             });
 
-            // ▼▼▼ 追加: ゾンビ掃除ロジック ▼▼▼
+            // ▼▼▼ 修正: ゾンビ掃除機能（記録がない古いデータも消すように強化） ▼▼▼
             const cleanupZombies = async () => {
-                const hbRef = ref(db, 'window_heartbeats');
-                const snapshot = await get(hbRef);
-                if (snapshot.exists()) {
-                    const heartbeats = snapshot.val();
+                // 窓の状態と、ハートビートの両方を取得する
+                const winSnapshot = await get(ref(db, 'windows'));
+                const hbSnapshot = await get(ref(db, 'window_heartbeats'));
+                
+                if (winSnapshot.exists()) {
+                    const windowsData = winSnapshot.val();
+                    const heartbeats = hbSnapshot.exists() ? hbSnapshot.val() : {};
                     const now = Date.now();
                     const FIVE_MINUTES = 5 * 60 * 1000;
-                    Object.keys(heartbeats).forEach(index => {
-                        if (now - heartbeats[index] > FIVE_MINUTES) {
-                            set(ref(db, 'windows/' + index), false);
-                            set(ref(db, 'window_heartbeats/' + index), null);
+
+                    Object.keys(windowsData).forEach(index => {
+                        // もし電気がついているなら(trueなら)チェックする
+                        if (windowsData[index] === true) {
+                            const lastBeat = heartbeats[index];
+
+                            // 条件1: ハートビート記録がそもそもない (昔のゾンビ)
+                            // 条件2: ハートビートが5分以上前 (最近のゾンビ)
+                            if (!lastBeat || (now - lastBeat > FIVE_MINUTES)) {
+                                console.log(`Cleaning up zombie room: ${index}`);
+                                // 該当の窓をOFFにする
+                                set(ref(db, 'windows/' + index), false);
+                                // ハートビート記録があれば消しておく
+                                set(ref(db, 'window_heartbeats/' + index), null);
+                            }
                         }
                     });
                 }
             };
-            // ▲▲▲ 追加終了 ▲▲▲
+            // ▲▲▲ 修正終了 ▲▲▲
 
             const saveProgress = () => {
                 isSaved.value = false;
