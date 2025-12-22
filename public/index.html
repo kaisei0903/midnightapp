@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Quiet Apartment</title>
 
     <link rel="manifest" href="manifest.json">
@@ -119,7 +120,8 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(4px);
-            z-index: 200;
+            z-index: 2000;
+            /* Ensure it covers everything including fixed dashboard */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -222,44 +224,150 @@
         }
 
 
+        /* Refactored Layout: Wrapper Strategy */
+
+        #rotate-message {
+            display: none !important;
+        }
+
+        body {
+            margin: 0;
+            background-color: #000;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            /* No flex center on body needed anymore */
+        }
+
         #app {
+            /* App is the fixed Viewport Container */
             position: relative;
-            /* iPad対応（画面内に収める） */
-            width: 100%;
-            height: 100%;
-            max-width: 177.78vh;
-            /* 16:9 の最大幅 */
-            max-height: 56.25vw;
-            /* 16:9 の最大高さ */
-            margin: auto;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            /* Flex center removed, relying on .game-container absolute centering */
+        }
 
-            /* 白い線の原因となる影を削除 */
-            box-shadow: none;
+        /* New Wrapper for Image Content */
+        .game-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
 
-            background: #000;
+            /* Sizing Logic (Width Fit) */
+            width: 100vw;
+            height: auto;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            z-index: 1;
+            /* Content layer */
         }
 
         .bg-image {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            image-rendering: pixelated;
-            filter: brightness(0.65) contrast(1.1);
+            height: auto;
+            display: block;
+            pointer-events: none;
         }
 
-        .lights-layer {
+        /* Overlays relative to .game-container */
+        .lights-layer,
+        .room-reflection {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 2;
             pointer-events: none;
         }
+
+        /* Dashboard positioning relative to the SCREEN (Viewport) */
+        .dashboard {
+            position: fixed;
+            bottom: 30px;
+            /* Always visible at bottom of screen */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            /* Ensure on top */
+
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+
+            width: auto;
+            min-width: 200px;
+            max-width: 90%;
+
+            background: rgba(20, 20, 20, 0.85);
+            /* Stronger background for visibility */
+            padding: 15px 30px;
+            border-radius: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .timer-display {
+            /* Responsive but capped font size */
+            font-size: clamp(32px, 8vw, 64px);
+            font-family: 'Courier New', monospace;
+            /* Monospaced to prevent jitter */
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .controls button {
+            background: transparent;
+            color: #ddd;
+            border: 1px solid #555;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .controls button:hover {
+            color: #fff;
+            border-color: #fff;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        /* Controls - Fixed to SCREEN, not Image */
+        .top-left-controls {
+            position: fixed;
+            /* Use Safe Area Insets for Notch/Status Bar support */
+            top: max(30px, env(safe-area-inset-top));
+            left: max(30px, env(safe-area-inset-left));
+            z-index: 3000;
+            /* Super high to sit above everything */
+
+            display: flex;
+            gap: 15px;
+            /* Add spacing between buttons */
+        }
+
+        /* Reset all previous window styles (They need new % coordinates) */
+        /* You can comment these out or leave them for user to update */
 
         /* 通常の窓 */
         .light {
@@ -583,52 +691,7 @@
             margin-top: 20px;
         }
 
-        /* Mobile Responsive & Orientation */
 
-        #rotate-message {
-            display: none !important;
-        }
-
-        /* Portrait Mode Styles */
-        @media (orientation: portrait) {
-            .bg-image {
-                /* Cover ensures image covers screen, centered */
-                object-fit: cover;
-                object-position: center;
-            }
-
-            .dashboard {
-                flex-direction: column;
-                justify-content: center;
-                gap: 30px;
-                top: 50%;
-                /* Center vertically in portrait */
-                transform: translate(-50%, -50%);
-                padding-bottom: 0;
-            }
-
-            .timer-display {
-                font-size: 20vw;
-                /* Larger font for portrait */
-            }
-
-            .timer-controls {
-                margin-top: 20px;
-            }
-
-            /* Adjust controls position */
-            .top-left-controls {
-                top: 20px;
-                left: 20px;
-            }
-
-            /* Stack lights layer properly */
-            .lights-layer {
-                /* Warning: Windows might be misaligned in cover mode */
-                background-size: cover;
-                background-position: center;
-            }
-        }
 
         @keyframes rotatePhone {
             0% {
@@ -688,36 +751,39 @@
         }
 
         /* 時計モード時のコントロール配置調整 */
-        #app.clock-mode .controls {
-            /* 絶対配置で画面下へ移動し、数字と分離 */
-            position: absolute;
-            bottom: 15%;
-            left: 50%;
-            transform: translateX(-50%);
-
-            gap: 10px;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
+        /* 時計モード時のコントロール配置調整 - REMOVED for Unified UI */
+        /* Controls will now stay inside the fixed dashboard */
 
         /* アイコンボタンのスタイル */
-        .icon-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #eee;
+        /* Icon Circle Button (Better Visibility) */
+        .icon-circle-btn {
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            cursor: pointer;
+            background: rgba(0, 0, 0, 0.6);
+            /* Darker background */
+            border: 1px solid rgba(255, 255, 255, 0.3);
             display: flex;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
             transition: all 0.2s;
-            padding: 0;
-            /* 通常時は薄くして主張を弱める & 上に余白 */
-            opacity: 0.3;
-            margin-top: 20px;
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .icon-circle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .icon-btn.minimize-btn {
+            /* Position absolutey so it doesn't affect Start button centering */
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            margin: 0;
         }
 
         .icon-btn:hover {
@@ -741,216 +807,15 @@
         }
 
         /* 座標設定 */
-        .w-0 {
-            top: 22%;
-            left: 21%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-1 {
-            top: 33%;
-            left: 21%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-2 {
-            top: 44.5%;
-            left: 21%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-3 {
-            top: 22%;
-            left: 26.3%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-4 {
-            top: 33%;
-            left: 26.3%;
-            width: 2.8%;
-            height: 4.1%;
-        }
-
-        .w-5 {
-            top: 44.5%;
-            left: 26.3%;
-            width: 2.8%;
-            height: 4%;
-        }
-
-        .w-6 {
-            top: 22%;
-            left: 32%;
-            width: 1.5%;
-            height: 4%;
-        }
-
-        .w-7 {
-            top: 33%;
-            left: 32%;
-            width: 1.5%;
-            height: 4%;
-        }
-
-        .w-8 {
-            top: 44.5%;
-            left: 32%;
-            width: 1.5%;
-            height: 4%;
-        }
-
-        .w-9 {
-            top: 22%;
-            left: 38.7%;
-            width: 4%;
-            height: 4%;
-        }
-
-        .w-10 {
-            top: 33%;
-            left: 38.7%;
-            width: 4%;
-            height: 4%;
-        }
-
-        .w-11 {
-            top: 44.5%;
-            left: 38.7%;
-            width: 4%;
-            height: 4%;
-        }
-
-        .w-12 {
-            top: 22%;
-            left: 45%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-13 {
-            top: 33%;
-            left: 45%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-14 {
-            top: 44.5%;
-            left: 45%;
-            width: 3%;
-            height: 4%;
-        }
-
-        /* Dev Room */
-        .w-15 {
-            top: 22%;
-            left: 50.2%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-16 {
-            top: 33%;
-            left: 50.2%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-17 {
-            top: 44.5%;
-            left: 50.2%;
-            width: 3%;
-            height: 4%;
-        }
-
-        .w-18 {
-            top: 22%;
-            left: 56.2%;
-            width: 4%;
-            height: 3.7%;
-        }
-
-        .w-19 {
-            top: 33%;
-            left: 56.2%;
-            width: 4%;
-            height: 3.7%;
-        }
-
-        .w-20 {
-            top: 44.5%;
-            left: 56.2%;
-            width: 4%;
-            height: 3.6%;
-        }
-
-        .w-21 {
-            top: 22%;
-            left: 65.4%;
-            width: 1.5%;
-            height: 3.6%;
-        }
-
-        .w-22 {
-            top: 33%;
-            left: 65.4%;
-            width: 1.5%;
-            height: 3.7%;
-        }
-
-        .w-23 {
-            top: 44.5%;
-            left: 65.4%;
-            width: 1.5%;
-            height: 3.6%;
-        }
-
-        .w-24 {
-            top: 22%;
-            left: 69%;
-            width: 2.8%;
-            height: 3.6%;
-        }
-
-        .w-25 {
-            top: 33%;
-            left: 69%;
-            width: 2.8%;
-            height: 4%;
-        }
-
-        .w-26 {
-            top: 44.5%;
-            left: 69%;
-            width: 2.8%;
-            height: 3.8%;
-        }
-
-        .w-27 {
-            top: 22%;
-            left: 75.5%;
-            width: 3.8%;
-            height: 3%;
-        }
-
-        .w-28 {
-            top: 33%;
-            left: 75.5%;
-            width: 3.8%;
-            height: 3.8%;
-        }
-
-        .w-29 {
-            top: 44.5%;
-            left: 75.5%;
-            width: 3.8%;
-            height: 3.7%;
-        }
+        /* 
+           NEW COORDINATE SYSTEM REQUIRED
+           Since the main image changed to Portrait, all previous coordinates are invalid.
+           Please use DevTools to find new top/left % for w-0 to w-29.
+        */
+        /* 
+        .w-0 { top: 40%; left: 50%; width: 5%; height: 2%; }
+        ...
+        */
     </style>
 </head>
 
@@ -963,33 +828,53 @@
 
     <div id="app">
 
-        <img src="bg.jpg" class="bg-image">
+        <div class="game-container">
+            <img src="bg-portrait.jpg" class="bg-image">
 
-        <div class="room-reflection" :class="{ 'is-active': isRunning }"></div>
+            <div class="room-reflection" :class="{ 'is-active': isRunning }"></div>
 
-        <div class="top-left-controls" v-if="!isRunning && !isClockMode && !isResting">
-            <div class="icon-circle-btn" @click="openStats" title="Records">
-                <svg viewBox="0 0 24 24">
-                    <path d="M18 20V10M12 20V4M6 20v-6"></path>
-                </svg>
+            <!-- Old top-left-controls block removed (Consolidated below) -->
+
+            <div class="toast-container">
+                <div v-for="msg in toasts" :key="msg.id" class="toast">
+                    {{ msg.text }}
+                </div>
             </div>
-            <div class="icon-circle-btn" @click="showSettings = true" title="Settings">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path
-                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                    </path>
-                </svg>
+
+            <!-- Settings Modal (Wait, Modal should be OUTSIDE game-container probably? But keeping it here for Z-index simplicity for now unless it breaks fixed) -->
+            <!-- Actually, Modal is fixed to screen. Inside absolute container is fine if z-index is high. But safer outside. 
+             Let's keep toast/modal inside for now to minimize diff risk, or move them out? 
+             The instruction targets lines 817-886. 
+             Lines 833-877 is Modal. 
+             Lines 879-886 is Lights. 
+             
+             If I wrap ALL of this, .toast-container and .modal-overlay will be inside .game-container.
+             .modal-overlay is position: fixed.
+             Detailed rule: fixed inside transform behaves as absolute.
+             CRITICAL: .game-container has transform: translate(-50%, -50%).
+             So .modal-overlay (fixed) inside it will become ABSOLUTE to .game-container.
+             Meaning Modal will be cropped!
+             
+             I MUST move Modal and Toast OUTSIDE .game-container.
+        -->
+
+            <div class="lights-layer">
+                <div v-for="(isOn, index) in windows" :key="index" class="light" :class="['w-' + index, { 
+                'is-active': isOn && index !== myRoomIndex, 
+                /* 電気がついている時だけ青いスタイルを適用する */
+                'is-dev-room': index === 14 && isOn,
+                'is-resting': isResting && index === myRoomIndex
+            }]"></div>
             </div>
         </div>
 
+        <!-- Move Toast/Modal Outside to preserve fixed positioning -->
         <div class="toast-container">
             <div v-for="msg in toasts" :key="msg.id" class="toast">
                 {{ msg.text }}
             </div>
         </div>
 
-        <!-- Settings Modal -->
         <transition name="fade">
             <div class="modal-overlay" v-if="showSettings" @click.self="saveSettings">
                 <div class="modal-content">
@@ -1025,16 +910,7 @@
             </div>
         </transition>
 
-        <div class="lights-layer">
-            <div v-for="(isOn, index) in windows" :key="index" class="light" :class="['w-' + index, { 
-                'is-active': isOn && index !== myRoomIndex, 
-                /* 電気がついている時だけ青いスタイルを適用する */
-                'is-dev-room': index === 14 && isOn,
-                'is-resting': isResting && index === myRoomIndex
-            }]"></div>
-        </div>
-
-        <div class=" top-left-controls" v-if="!isRunning && !isResting">
+        <div class="top-left-controls" v-if="!isRunning && !isResting">
             <!-- Toggle Screen (Records <-> Room) -->
             <div class="icon-circle-btn" @click="toggleScreen"
                 :title="currentTab === 'room' ? 'Go to Records' : 'Back to Room'">
@@ -1049,20 +925,22 @@
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
             </div>
+
+            <!-- Toggle Mode (Stopwatch <-> Timer) -->
             <div class="icon-circle-btn" @click="toggleMode"
                 :title="mode === 'pomodoro' ? 'Switch to Stopwatch' : 'Switch to Timer'">
-                <!-- Show Stopwatch icon if current is Pomodoro (Timer) -->
                 <svg v-if="mode === 'pomodoro'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <!-- Show Timer icon if current is Stopwatch -->
                 <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M10 2h4"></path>
                     <path d="M12 14v-4"></path>
                     <path d="M4 13a8 8 0 0 1 8-7 8 8 0 1 1-8 7"></path>
                 </svg>
             </div>
+
+            <!-- Settings Button Removed per user request -->
         </div>
 
         <div class="dashboard" :class="{ 'focus-mode': isRunning, 'rest-mode': isResting }"
@@ -1086,7 +964,7 @@
 
                 <button v-if="!isRunning && !isResting && time > 0" @click="resetTimer">✕</button>
 
-                <button v-if="!isClockMode" class="icon-btn" @click="isClockMode = true" title="Maximize">
+                <button v-if="!isClockMode" class="icon-btn minimize-btn" @click="isClockMode = true" title="Maximize">
                     <svg viewBox="0 0 24 24">
                         <path d="M15 3h6v6"></path>
                         <path d="M9 21H3v-6"></path>
@@ -1095,7 +973,7 @@
                     </svg>
                 </button>
 
-                <button v-if="isClockMode" class="icon-btn" @click="isClockMode = false" title="Minimize">
+                <button v-if="isClockMode" class="icon-btn minimize-btn" @click="isClockMode = false" title="Minimize">
                     <svg viewBox="0 0 24 24">
                         <path d="M4 14h6v6"></path>
                         <path d="M20 10h-6V4"></path>
@@ -1198,11 +1076,11 @@
                         if (mode.value === 'pomodoro') {
                             settings.value.mode = 'stopwatch';
                             mode.value = 'countup';
-                            showToast('Switched to Stopwatch');
+                            // showToast('Switched to Stopwatch'); // Removed per user request
                         } else {
                             settings.value.mode = 'timer';
                             mode.value = 'pomodoro';
-                            showToast('Switched to Timer');
+                            // showToast('Switched to Timer'); // Removed per user request
                         }
                         localStorage.setItem('qa_settings', JSON.stringify(settings.value));
                         if (!isRunning.value && !isResting.value) resetTimer();
