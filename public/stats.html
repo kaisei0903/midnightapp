@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Trace of Time | Midnight Focus</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0f;
+            color: #eee;
+            font-family: 'Times New Roman', 'YuMincho', serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 1. Background Image (same as Room) */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('bg-portrait.jpg') no-repeat center center/cover;
+            filter: blur(20px) brightness(0.3);
+            z-index: -2;
+        }
+
+        /* 2. Global Texture Overlay (Noise/Paper feel) */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(255, 220, 180, 0.03), transparent 80%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Back Icon Button */
+        .back-icon-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            color: #ccc;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-decoration: none;
+            /* In case it's an anchor */
+        }
+
+        .back-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffdbac;
+            /* Amber accent */
+            transform: scale(1.1);
+            border-color: rgba(255, 219, 172, 0.3);
+            box-shadow: 0 4px 20px rgba(255, 219, 172, 0.2);
+        }
+
+        .back-icon-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Immersion Container (Formerly Card) */
+        .stats-container {
+            width: 100%;
+            max-width: 800px;
+            /* Wider immersive view */
+            height: 100vh;
+            /* Full screen feel */
+            padding: 40px 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+
+            /* Subtly differentiate area but no hard borders */
+            background: radial-gradient(circle at center, rgba(20, 20, 25, 0.4) 0%, transparent 70%);
+        }
+
+        /* Header */
+        .stats-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        /* Underline with fade edges */
+        .stats-header::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ffdbac, transparent);
+            opacity: 0.5;
+        }
+
+        .stats-title-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stats-icon {
+            font-size: 28px;
+            text-shadow: 0 0 15px rgba(255, 219, 172, 0.4);
+        }
+
+        .stats-title {
+            margin: 0;
+            font-size: 32px;
+            letter-spacing: 2px;
+            font-weight: normal;
+            font-style: italic;
+            color: #ffdbac;
+            text-shadow: 0 0 15px rgba(255, 219, 172, 0.2);
+        }
+
+        /* Segmented Control */
+        .glass-segmented-control {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+
+        .segment-option {
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: 0.4s;
+            position: relative;
+            padding-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .segment-option:hover {
+            opacity: 0.7;
+        }
+
+        .segment-option.active {
+            opacity: 1;
+            color: #ffdbac;
+            text-shadow: 0 0 8px rgba(255, 219, 172, 0.2);
+        }
+
+        .segment-option.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            /* Wider underline */
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ffdbac, transparent);
+        }
+
+        /* Chart Wrapper */
+        .chart-wrapper {
+            position: relative;
+            flex-grow: 1;
+            max-height: 400px;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0.5;
+            font-size: 15px;
+            color: #aaa;
+            letter-spacing: 1px;
+        }
+
+        /* Stats Footer */
+        .stats-footer {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            padding-top: 20px;
+        }
+
+        .stat-pill {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: normal;
+            color: #eee;
+            font-family: 'Times New Roman', serif;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .stat-value.mono {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            opacity: 0.5;
+            margin-top: 5px;
+        }
+
+        .sync-link {
+            font-size: 11px;
+            color: #ffdbac;
+            cursor: pointer;
+            text-decoration: none;
+            opacity: 0.4;
+            transition: 0.2s;
+            margin-top: 5px;
+        }
+
+        .sync-link:hover {
+            opacity: 0.9;
+        }
+
+        /* =========================================
+           MIDNIGHT CALENDAR
+           ========================================= */
+        .calendar-view {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        .month-label {
+            font-size: 24px;
+            color: #ffdbac;
+            font-style: italic;
+        }
+
+        .cal-nav-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #888;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .cal-nav-btn:hover {
+            color: #fff;
+            border-color: #ffdbac;
+            background: rgba(255, 219, 172, 0.1);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .cal-day-header {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cal-day {
+            position: relative;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+            min-height: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+            transition: 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .cal-day.today {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #eee;
+        }
+
+        .cal-day.empty {
+            background: transparent;
+        }
+
+        /* Heatmap Levels */
+        .cal-day.level-1 {
+            background: rgba(255, 219, 172, 0.1);
+            box-shadow: 0 0 5px rgba(255, 180, 100, 0.05);
+            color: #ccc;
+        }
+
+        .cal-day.level-2 {
+            background: rgba(255, 219, 172, 0.2);
+            box-shadow: 0 0 8px rgba(255, 180, 100, 0.1);
+            color: #fff;
+        }
+
+        .cal-day.level-3 {
+            background: rgba(255, 219, 172, 0.35);
+            box-shadow: 0 0 12px rgba(255, 180, 100, 0.2);
+            color: #fff;
+            text-shadow: 0 0 5px #ffdbac;
+            border: 1px solid rgba(255, 219, 172, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="back-icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+    </a>
+
+    <div id="app" class="stats-container">
+        <div class="stats-header">
+            <div class="stats-title-group">
+                <span class="stats-icon">🌙</span>
+                <h2 class="stats-title">Trace of Time</h2>
+            </div>
+        </div>
+
+        <!-- Period Switcher -->
+        <div class="glass-segmented-control">
+            <div class="segment-option" :class="{ active: chartPeriod === 'day' }" @click="renderChart('day')">Today
+            </div>
+            <div class="segment-option" :class="{ active: chartPeriod === 'week' }" @click="renderChart('week')">
+                This Week</div>
+            <div class="segment-option" :class="{ active: chartPeriod === 'month' }" @click="renderChart('month')">Month
+            </div>
+            <div class="segment-option" :class="{ active: chartPeriod === 'calendar' }"
+                @click="renderChart('calendar')">Calendar
+            </div>
+        </div>
+
+        <!-- Main Chart Area -->
+        <div class="chart-wrapper" v-if="chartPeriod !== 'calendar'">
+            <canvas id="focusChart"></canvas>
+            <div v-if="hasNoLogs" class="empty-state">
+                <span class="empty-icon">🍃</span>
+                <p>No records yet...</p>
+            </div>
+        </div>
+
+        <!-- Calendar Area -->
+        <div class="calendar-view" v-if="chartPeriod === 'calendar'">
+            <div class="calendar-header">
+                <button class="cal-nav-btn" @click="changeMonth(-1)">‹</button>
+                <div class="month-label">{{ currentMonthLabel }}</div>
+                <button class="cal-nav-btn" @click="changeMonth(1)">›</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="cal-day-header" v-for="d in ['S','M','T','W','T','F','S']" :key="d">{{d}}</div>
+                <div v-for="(day, index) in calendarDays" :key="index" class="cal-day" :class="[
+                        { 'today': day.isToday, 'empty': !day.date },
+                        day.level ? 'level-' + day.level : ''
+                     ]" :title="day.minutes ? day.minutes + ' min' : ''">
+                    <span v-if="day.date">{{ day.date }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary / Footer -->
+        <div class="stats-footer">
+            <div class="stat-pill">
+                <span class="stat-label">Total Journey</span>
+                <span class="stat-value">{{ formattedTotalTime }}</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-label">Identity</span>
+                <span class="stat-value mono">{{ userId ? userId.substring(0, 8) + '...' : 'Loading...' }}</span>
+                <span class="sync-link" @click="importUser">[Sync]</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createApp, ref as vueRef, computed, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+        import { db, ref, get, set, update, formatTimeStr, getWeekKey } from "./shared.js";
+
+        createApp({
+            setup() {
+                const userId = vueRef('');
+                const totalSeconds = vueRef(0);
+                const chartPeriod = vueRef('day');
+                const hasNoLogs = vueRef(false);
+                let chartInstance = null;
+
+                // Calendar Specific
+                const currentDate = vueRef(new Date());
+                const calendarDays = vueRef([]);
+
+                const formattedTotalTime = computed(() => {
+                    const h = Math.floor(totalSeconds.value / 3600);
+                    const m = Math.floor((totalSeconds.value % 3600) / 60);
+                    return `${h}h ${m}m`;
+                });
+
+                const currentMonthLabel = computed(() => {
+                    const d = currentDate.value;
+                    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                    return `${months[d.getMonth()]} ${d.getFullYear()}`;
+                });
+
+                const initUser = async () => {
+                    let id = localStorage.getItem('qa_user_id');
+                    if (!id) {
+                        id = 'user_' + Math.random().toString(36).substring(2, 12);
+                        localStorage.setItem('qa_user_id', id);
+                    }
+                    userId.value = id;
+                    const userRef = ref(db, 'users/' + id + '/total_seconds');
+                    const snapshot = await get(userRef);
+                    if (snapshot.exists()) totalSeconds.value = snapshot.val();
+                    else set(userRef, 0);
+
+                    renderChart('day');
+                };
+
+                const changeMonth = (delta) => {
+                    const d = new Date(currentDate.value);
+                    d.setMonth(d.getMonth() + delta);
+                    currentDate.value = d;
+                    renderCalendar();
+                };
+
+                const renderCalendar = async () => {
+                    const logsRef = ref(db, 'users/' + userId.value + '/logs');
+                    const snapshot = await get(logsRef);
+                    const logs = snapshot.exists() ? Object.values(snapshot.val()) : [];
+
+                    const year = currentDate.value.getFullYear();
+                    const month = currentDate.value.getMonth();
+
+                    // Create basic grid
+                    const firstDay = new Date(year, month, 1);
+                    const lastDay = new Date(year, month + 1, 0);
+                    const daysInMonth = lastDay.getDate();
+                    const startDay = firstDay.getDay(); // 0 = Sun
+
+                    const days = [];
+                    // Empty slots
+                    for (let i = 0; i < startDay; i++) { days.push({ date: '' }); }
+
+                    // Group logs by YYYY-MM-DD
+                    const groupedLogs = {};
+                    logs.forEach(log => {
+                        const d = new Date(log.start);
+                        const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+                        if (!groupedLogs[k]) groupedLogs[k] = 0;
+                        groupedLogs[k] += log.duration;
+                    });
+
+                    const todayStr = `${new Date().getFullYear()}-${new Date().getMonth()}-${new Date().getDate()}`;
+
+                    for (let i = 1; i <= daysInMonth; i++) {
+                        const dateKey = `${year}-${month}-${i}`;
+                        const totalSeconds = groupedLogs[dateKey] || 0;
+                        let level = 0;
+                        if (totalSeconds > 0) level = 1;
+                        if (totalSeconds > 3600) level = 2; // > 1h
+                        if (totalSeconds > 10800) level = 3; // > 3h
+
+                        days.push({
+                            date: i,
+                            isToday: dateKey === todayStr,
+                            level: level,
+                            minutes: Math.floor(totalSeconds / 60)
+                        });
+                    }
+                    calendarDays.value = days;
+                };
+
+                const renderChart = async (period) => {
+                    chartPeriod.value = period;
+                    if (period === 'calendar') {
+                        renderCalendar();
+                        return;
+                    }
+
+                    const logsRef = ref(db, 'users/' + userId.value + '/logs');
+                    const snapshot = await get(logsRef);
+                    if (!snapshot.exists()) { hasNoLogs.value = true; if (chartInstance) chartInstance.destroy(); return; }
+                    hasNoLogs.value = false;
+                    const logs = Object.values(snapshot.val());
+                    const now = new Date(); const labels = []; const dataPoints = []; const grouped = {};
+
+                    if (period === 'day') {
+                        for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(now.getDate() - i); labels.push((d.getMonth() + 1) + '/' + d.getDate()); grouped[d.toISOString().split('T')[0]] = 0; }
+                        logs.forEach(log => { const k = new Date(log.start).toISOString().split('T')[0]; if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                    } else if (period === 'week') {
+                        for (let i = 7; i >= 0; i--) {
+                            const d = new Date(); d.setDate(now.getDate() - (i * 7));
+                            const day = d.getDay();
+                            const diff = d.getDate() - day + (day == 0 ? -6 : 1);
+                            const monday = new Date(d); monday.setDate(diff);
+                            labels.push((monday.getMonth() + 1) + '/' + monday.getDate() + '~');
+                            grouped[getWeekKey(d)] = 0;
+                        }
+                        logs.forEach(log => { const k = getWeekKey(new Date(log.start)); if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                    } else if (period === 'month') {
+                        for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(now.getMonth() - i); labels.push((d.getMonth() + 1) + '月'); grouped[d.getFullYear() + '-' + (d.getMonth() + 1)] = 0; }
+                        logs.forEach(log => { const d = new Date(log.start); const k = d.getFullYear() + '-' + (d.getMonth() + 1); if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                    }
+
+                    Object.values(grouped).forEach(v => dataPoints.push(parseFloat((v / 3600).toFixed(1))));
+
+                    const ctx = document.getElementById('focusChart').getContext('2d');
+                    if (chartInstance) chartInstance.destroy();
+
+                    // Gradient For Emotional Vibe (Amber/Gold)
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(255, 219, 172, 0.4)');
+                    gradient.addColorStop(1, 'rgba(255, 219, 172, 0.0)');
+
+                    chartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Hours',
+                                data: dataPoints,
+                                backgroundColor: gradient,
+                                borderColor: 'rgba(255, 219, 172, 0.8)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                barPercentage: 0.5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 1500,
+                                easing: 'easeInOutCubic'
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(255,255,255,0.03)' },
+                                    ticks: { color: '#888', font: { family: 'Times New Roman' } },
+                                    border: { display: false }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: '#aaa', font: { family: 'Times New Roman', size: 11 } },
+                                    border: { display: false }
+                                }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(20, 20, 25, 0.9)',
+                                    titleColor: '#ffdbac',
+                                    bodyColor: '#fff',
+                                    bodyFont: { family: 'Times New Roman' },
+                                    borderColor: 'rgba(255, 219, 172, 0.3)',
+                                    borderWidth: 1,
+                                    displayColors: false,
+                                    padding: 10
+                                }
+                            }
+                        }
+                    });
+                };
+
+                const importUser = () => {
+                    const inputId = prompt("Enter your previous User ID to sync data:", userId.value);
+                    if (inputId && inputId !== userId.value) {
+                        if (confirm("Switch user? Current local data will be replaced.")) {
+                            localStorage.setItem('qa_user_id', inputId);
+                            window.location.reload();
+                        }
+                    }
+                };
+
+                onMounted(() => {
+                    initUser();
+                });
+
+                return { userId, formattedTotalTime, chartPeriod, hasNoLogs, renderChart, importUser, calendarDays, currentMonthLabel, changeMonth };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

@@ -272,6 +272,9 @@
             height: auto;
             display: block;
             pointer-events: none;
+            filter: brightness(0.75) contrast(1.05);
+            /* Balanced darkness */
+            transition: filter 1s ease;
         }
 
         /* Overlays relative to .game-container */
@@ -292,8 +295,8 @@
         /* 1. Timer Centered */
         .timer-centered {
             position: fixed;
-            top: 45%;
-            /* Slightly above true center for visual balance */
+            top: 50%;
+            /* Dead center */
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 1000;
@@ -368,13 +371,12 @@
             letter-spacing: 2px;
             color: #fff;
             white-space: nowrap;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: pointer;
         }
 
-        .controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
+
 
         .controls button {
             background: transparent;
@@ -594,16 +596,39 @@
         }
 
         button.primary {
-            color: var(--ui-accent);
+            color: #fff;
             font-weight: bold;
-            border: 1px solid rgba(255, 204, 0, 0.3);
-            border-radius: 15px;
-            padding: 6px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 30px;
+            /* Pill shape */
+            padding: 10px 40px;
+            /* Wider */
+            font-size: 14px;
+            letter-spacing: 2px;
+            background: rgba(255, 255, 255, 0.05);
+            /* Subtle fill */
+            backdrop-filter: blur(4px);
+            min-width: 140px;
+            /* Minimum responsive width */
+            transition: all 0.3s ease;
         }
 
         button.primary:hover {
-            background: rgba(255, 204, 0, 0.1);
-            border-color: var(--ui-accent);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Dimmed State when Timer Running */
+        .controls.dimmed {
+            opacity: 0.2;
+            /* Very subtle */
+            transition: opacity 0.5s ease;
+        }
+
+        .controls.dimmed:hover {
+            opacity: 1;
         }
 
         .mode-text {
@@ -984,7 +1009,7 @@
             </div>
 
             <!-- Toggle Mode (Stopwatch <-> Timer) -->
-            <div class="icon-circle-btn" @click="toggleMode"
+            <div class="icon-circle-btn" @click="toggleMode" v-if="currentTab === 'room'"
                 :title="mode === 'pomodoro' ? 'Switch to Stopwatch' : 'Switch to Timer'">
                 <svg v-if="mode === 'pomodoro'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -1019,7 +1044,7 @@
 
         <!-- Bottom Controls (Fixed Bottom) -->
         <div class="controls-bottom" v-show="currentTab === 'room'">
-            <div class="controls">
+            <div class="controls" :class="{ 'dimmed': isRunning }">
 
                 <!-- Maximize/Minimize Buttons (Top) -->
                 <button v-if="!isClockMode" class="icon-circle-btn" @click="isClockMode = true" title="Maximize">
@@ -1049,56 +1074,11 @@
             </div>
         </div>
 
-        <div class="stats-screen" :class="{ visible: currentTab === 'stats' }">
-            <button class="close-stats-btn" @click="currentTab = 'room'" title="Back">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    style="width: 20px; height: 20px;">
-                    <path d="M15 18l-6-6 6-6"></path>
-                </svg>
-            </button>
-            <div class="period-selector">
-                <div class="period-btn" :class="{ active: chartPeriod === 'day' }" @click="renderChart('day')">DAY
-                </div>
-                <div class="period-btn" :class="{ active: chartPeriod === 'week' }" @click="renderChart('week')">
-                    WEEK
-                </div>
-                <div class="period-btn" :class="{ active: chartPeriod === 'month' }" @click="renderChart('month')">
-                    MONTH
-                </div>
-            </div>
-            <div class="chart-container">
-                <div v-if="hasNoLogs" class="empty-logs">No records yet. Start focusing!</div>
-            </div>
-
-            <div style="margin-top: 15px; font-size: 10px; color: #444; font-family: monospace;">
-                ID: {{ userId }} <span @click="importUser"
-                    style="cursor: pointer; text-decoration: underline; margin-left: 5px; color: #666;">[SYNC]</span>
-            </div>
-
-            <div style="margin-top: 15px; font-size: 9px; color: #333; cursor: pointer; text-decoration: underline;"
-                @click="forceResetLights">
-                [RESET ALL LIGHTS]
-            </div>
-        </div>
+        <!-- "Midnight Console" Stats Overlay REMOVED (Moved to stats.html) -->
 
         <script type="module">
-            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-            import { getDatabase, ref, set, update, onValue, onDisconnect, push, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
             import { createApp, ref as vueRef, computed, onMounted, watch } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
-
-            const firebaseConfig = {
-                apiKey: "AIzaSyApsAaSIFEh1BhRgl_sFPssLMOPLjnOqaE",
-                authDomain: "late-light.firebaseapp.com",
-                databaseURL: "https://late-light-default-rtdb.firebaseio.com",
-                projectId: "late-light",
-                storageBucket: "late-light.firebasestorage.app",
-                messagingSenderId: "785315819458",
-                appId: "1:785315819458:web:feda9dc1fb93f497f6b05b",
-                measurementId: "G-C4HKZB6L22"
-            };
-
-            const app = initializeApp(firebaseConfig);
-            const db = getDatabase(app);
+            import { db, ref, set, onDisconnect, get, formatTimeStr } from "./shared.js";
 
             createApp({
                 setup() {
@@ -1111,10 +1091,7 @@
 
                     // UI States
                     const currentTab = vueRef('room');
-                    const chartPeriod = vueRef('day');
-                    const hasNoLogs = vueRef(false);
                     const showSettings = vueRef(false);
-                    let chartInstance = null;
 
                     // Toasts
                     const toasts = vueRef([]);
@@ -1141,11 +1118,9 @@
                         if (mode.value === 'pomodoro') {
                             settings.value.mode = 'stopwatch';
                             mode.value = 'countup';
-                            // showToast('Switched to Stopwatch'); // Removed per user request
                         } else {
                             settings.value.mode = 'timer';
                             mode.value = 'pomodoro';
-                            // showToast('Switched to Timer'); // Removed per user request
                         }
                         localStorage.setItem('qa_settings', JSON.stringify(settings.value));
                         if (!isRunning.value && !isResting.value) resetTimer();
@@ -1179,23 +1154,12 @@
 
                         // Reset timer display
                         if (!isRunning.value && !isResting.value) time.value = 0;
-
-                        // showToast(`Timer set to ${nextMin} min`); // Removed per user request
-                    };
-
-                    const formatTimeStr = (s) => {
-                        const h = Math.floor(s / 3600);
-                        const m = Math.floor((s % 3600) / 60);
-                        const sec = s % 60;
-                        if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-                        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
                     };
 
                     const FOCUS_TIME = computed(() => settings.value.focusTimeSeconds || (settings.value.pomodoro * 60));
 
                     const toggleScreen = () => {
-                        currentTab.value = currentTab.value === 'room' ? 'stats' : 'room';
-                        if (currentTab.value === 'stats') renderChart('day');
+                        window.open('stats.html', '_blank');
                     };
 
                     const isClockMode = vueRef(true);
@@ -1421,65 +1385,21 @@
                         return `${h}h ${m}m`;
                     });
 
-                    const openStats = () => { currentTab.value = 'stats'; renderChart('day'); };
-                    const renderChart = async (period) => {
-                        chartPeriod.value = period;
-                        const logsRef = ref(db, 'users/' + userId.value + '/logs');
-                        const snapshot = await get(logsRef);
-                        if (!snapshot.exists()) { hasNoLogs.value = true; if (chartInstance) chartInstance.destroy(); return; }
-                        hasNoLogs.value = false;
-                        const logs = Object.values(snapshot.val());
-                        const now = new Date(); const labels = []; const dataPoints = []; const grouped = {};
-
-                        if (period === 'day') {
-                            for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(now.getDate() - i); labels.push((d.getMonth() + 1) + '/' + d.getDate()); grouped[d.toISOString().split('T')[0]] = 0; }
-                            logs.forEach(log => { const k = new Date(log.start).toISOString().split('T')[0]; if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                        } else if (period === 'week') {
-                            for (let i = 7; i >= 0; i--) {
-                                const d = new Date(); d.setDate(now.getDate() - (i * 7));
-                                const day = d.getDay();
-                                const diff = d.getDate() - day + (day == 0 ? -6 : 1);
-                                const monday = new Date(d); monday.setDate(diff);
-                                labels.push((monday.getMonth() + 1) + '/' + monday.getDate() + '~');
-                                grouped[getWeekKey(d)] = 0;
-                            }
-                            logs.forEach(log => { const k = getWeekKey(new Date(log.start)); if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                        } else if (period === 'month') {
-                            for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(now.getMonth() - i); labels.push((d.getMonth() + 1) + '月'); grouped[d.getFullYear() + '-' + (d.getMonth() + 1)] = 0; }
-                            logs.forEach(log => { const d = new Date(log.start); const k = d.getFullYear() + '-' + (d.getMonth() + 1); if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                        }
-
-                        Object.values(grouped).forEach(v => dataPoints.push(parseFloat((v / 3600).toFixed(1))));
-
-                        const ctx = document.getElementById('statsChart').getContext('2d');
-                        if (chartInstance) chartInstance.destroy();
-                        chartInstance = new Chart(ctx, {
-                            type: 'bar',
-                            data: { labels, datasets: [{ label: 'Hours', data: dataPoints, backgroundColor: 'rgba(255, 204, 0, 0.5)', borderColor: 'rgba(255, 204, 0, 1)', borderWidth: 1 }] },
-                            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
-                        });
-                    };
-                    const getWeekKey = (d) => { const s = new Date(d.getFullYear(), 0, 1); const w = Math.ceil((((d - s) / 86400000) + s.getDay() + 1) / 7); return d.getFullYear() + '-' + w; };
-
-                    const importUser = () => {
-                        const inputId = prompt("Enter your previous User ID to sync data:", userId.value);
-                        if (inputId && inputId !== userId.value) {
-                            if (confirm("Switch user? Current local data will be replaced.")) {
-                                localStorage.setItem('qa_user_id', inputId);
-                                window.location.reload();
-                            }
-                        }
-                    };
-
                     const forceResetLights = () => {
                         if (confirm("Fix 'Stuck Lights'?\n(All windows will be turned off.)")) {
                             set(ref(db, 'windows'), null);
-                            set(ref(db, 'window_heartbeats'), null); // ハートビートも消す
+                            set(ref(db, 'window_heartbeats'), null);
                             showToast("Database cleared and lights reset.");
                         }
                     };
 
-                    return { windows, activeNeighbors, isRunning, isResting, time, mode, formattedTime, formattedTotalTime, handleMainButton, resetTimer, myRoomIndex, isSaved, currentTab, chartPeriod, hasNoLogs, openStats, renderChart, userId, importUser, isClockMode, forceResetLights, toasts, showSettings, settings, saveSettings, toggleMode, toggleScreen, cycleTimerDuration };
+                    return {
+                        windows, activeNeighbors, isRunning, isResting, time, mode,
+                        formattedTime, formattedTotalTime, handleMainButton, resetTimer,
+                        myRoomIndex, isSaved, currentTab, userId,
+                        isClockMode, forceResetLights, toasts,
+                        showSettings, settings, saveSettings, toggleMode, toggleScreen, cycleTimerDuration
+                    };
                 }
             }).mount('#app');
         </script>
