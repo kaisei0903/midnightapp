@@ -285,33 +285,78 @@
             pointer-events: none;
         }
 
-        /* Dashboard positioning relative to the SCREEN (Viewport) */
-        .dashboard {
-            position: fixed;
-            bottom: 30px;
-            /* Always visible at bottom of screen */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            /* Ensure on top */
+        /* =========================================
+           SPLIT LAYOUT: Timer (Center) & Controls (Bottom)
+           ========================================= */
 
+        /* 1. Timer Centered */
+        .timer-centered {
+            position: fixed;
+            top: 45%;
+            /* Slightly above true center for visual balance */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
 
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
+
+            /* Optional: Transparent or subtle backing? */
+            /* User asked for numbers to be focused. No heavy box needed. */
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            pointer-events: auto;
+            /* Clickable for duration cycle */
+            transition: all 0.5s ease-in-out;
+            /* Smooth transition when moving */
+        }
+
+        /* 1-B. Timer at Bottom (Room Mode / Shrunk) */
+        .timer-centered.room-view {
+            top: auto;
+            /* Release Top */
+            bottom: 150px;
+            /* Sit above the controls */
+            transform: translateX(-50%);
+            /* Only center horizontally */
+        }
+
+        /* 2. Controls Fixed to Bottom */
+        .controls-bottom {
+            position: fixed;
+            /* Safe area support for Home Indicator */
+            bottom: max(30px, env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            /* No background - just a transparent container for positioning */
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            backdrop-filter: none;
+            border: none;
+            box-shadow: none;
 
             width: auto;
-            min-width: 200px;
-            max-width: 90%;
+        }
 
-            background: rgba(20, 20, 20, 0.85);
-            /* Stronger background for visibility */
-            padding: 15px 30px;
-            border-radius: 40px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        .controls {
+            display: flex;
+            flex-direction: column;
+            /* Vertical Stack */
+            gap: 20px;
+            /* Space between Start and Maximize */
+            justify-content: flex-end;
+            align-items: center;
+            width: 100%;
+            position: relative;
+            /* For absolutely positioned Minimize btn */
         }
 
         .timer-display {
@@ -746,7 +791,8 @@
 
         /* 時計モード時に不要な要素を隠す */
         #app.clock-mode .info-group,
-        #app.clock-mode .controls button:not(.icon-btn):not(.primary) {
+        /* Only hide buttons that are NOT primary AND NOT icon-circle-btn */
+        #app.clock-mode .controls button:not(.icon-circle-btn):not(.primary) {
             display: none;
         }
 
@@ -775,6 +821,17 @@
         .icon-circle-btn:hover {
             background: rgba(255, 255, 255, 0.2);
             transform: scale(1.1);
+        }
+
+        /* SVG Icon Style for Circle Btn */
+        .icon-circle-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         .icon-btn.minimize-btn {
@@ -943,7 +1000,9 @@
             <!-- Settings Button Removed per user request -->
         </div>
 
-        <div class="dashboard" :class="{ 'focus-mode': isRunning, 'rest-mode': isResting }"
+        <!-- Timer Area (Centered or Bottom) -->
+        <div class="timer-centered"
+            :class="{ 'focus-mode': isRunning, 'rest-mode': isResting, 'room-view': !isClockMode }"
             v-show="currentTab === 'room'">
             <div class="info-group">
                 <div class="neighbor-count">
@@ -956,15 +1015,14 @@
             <div class="timer-display" @click="cycleTimerDuration" :class="{ 'clickable': mode === 'pomodoro' }">
                 {{ formattedTime }}
             </div>
+        </div>
 
+        <!-- Bottom Controls (Fixed Bottom) -->
+        <div class="controls-bottom" v-show="currentTab === 'room'">
             <div class="controls">
-                <button class="primary" @click="handleMainButton">
-                    {{ isResting ? 'SKIP BREAK' : (isRunning ? 'STOP' : 'START') }}
-                </button>
 
-                <button v-if="!isRunning && !isResting && time > 0" @click="resetTimer">✕</button>
-
-                <button v-if="!isClockMode" class="icon-btn minimize-btn" @click="isClockMode = true" title="Maximize">
+                <!-- Maximize/Minimize Buttons (Top) -->
+                <button v-if="!isClockMode" class="icon-circle-btn" @click="isClockMode = true" title="Maximize">
                     <svg viewBox="0 0 24 24">
                         <path d="M15 3h6v6"></path>
                         <path d="M9 21H3v-6"></path>
@@ -973,13 +1031,20 @@
                     </svg>
                 </button>
 
-                <button v-if="isClockMode" class="icon-btn minimize-btn" @click="isClockMode = false" title="Minimize">
+                <button v-if="isClockMode" class="icon-circle-btn" @click="isClockMode = false" title="Minimize">
                     <svg viewBox="0 0 24 24">
                         <path d="M4 14h6v6"></path>
                         <path d="M20 10h-6V4"></path>
                         <path d="M14 10l7-7"></path>
                         <path d="M10 14l-7 7"></path>
                     </svg>
+                </button>
+
+                <button v-if="!isRunning && !isResting && time > 0" @click="resetTimer">✕</button>
+
+                <!-- Start/Stop Button (Bottom) -->
+                <button class="primary" @click="handleMainButton">
+                    {{ isResting ? 'SKIP BREAK' : (isRunning ? 'STOP' : 'START') }}
                 </button>
             </div>
         </div>
@@ -1115,7 +1180,7 @@
                         // Reset timer display
                         if (!isRunning.value && !isResting.value) time.value = 0;
 
-                        showToast(`Timer set to ${nextMin} min`);
+                        // showToast(`Timer set to ${nextMin} min`); // Removed per user request
                     };
 
                     const formatTimeStr = (s) => {
