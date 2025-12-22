@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -18,43 +19,267 @@
 
     <style>
         :root {
-            --light-base: rgba(255, 240, 150, 0.6); 
+            --light-base: rgba(255, 240, 150, 0.6);
             --light-glow: rgba(255, 220, 80, 0.5);
-            --light-dev:  rgba(200, 240, 255, 0.8);
-            --dev-glow:   rgba(100, 200, 255, 0.6);
-            
+            --light-dev: rgba(200, 240, 255, 0.8);
+            --dev-glow: rgba(100, 200, 255, 0.6);
+
             /* ★休憩モードの色（青白く落ち着いた光） */
             --light-rest: rgba(150, 230, 255, 0.6);
-            --rest-glow:  rgba(80, 200, 255, 0.4);
+            --rest-glow: rgba(80, 200, 255, 0.4);
 
-            --ui-bg: rgba(0, 0, 0, 0.7);
+            --ui-bg: rgba(20, 20, 20, 0.65);
+            --ui-border: rgba(255, 255, 255, 0.1);
             --ui-text: #eee;
             --ui-accent: #ffcc00;
-            --ui-rest:    #00ccff; /* 休憩中のUIアクセントカラー */
+            --ui-rest: #00ccff;
+            /* 休憩中のUIアクセントカラー */
+            --glass-blur: blur(12px);
+            --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
-        body { margin: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: var(--ui-text); font-family: 'Helvetica Neue', Arial, sans-serif; touch-action: none; }
-        
-        #app { 
-            position: relative; 
+
+        body {
+            margin: 0;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--ui-text);
+            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            touch-action: none;
+        }
+
+        /* Transitions */
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.5s ease;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
+
+        .slide-up-enter-active,
+        .slide-up-leave-active {
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .slide-up-enter-from,
+        .slide-up-leave-to {
+            opacity: 0;
+            transform: translateY(20px) translateX(-50%);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid var(--ui-accent);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            box-shadow: 0 4px 15px rgba(255, 204, 0, 0.2);
+            backdrop-filter: blur(10px);
+            animation: toastIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal / Settings */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: rgba(30, 30, 30, 0.9);
+            border: 1px solid var(--ui-border);
+            border-radius: 20px;
+            padding: 25px;
+            width: 85%;
+            max-width: 320px;
+            box-shadow: var(--shadow-soft);
+            color: #eee;
+        }
+
+        .modal-header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            cursor: pointer;
+            opacity: 0.6;
+            font-size: 20px;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .setting-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 8px;
+            padding: 4px 8px;
+            width: 60px;
+            text-align: center;
+        }
+
+        .setting-radio-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .setting-radio-label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .setting-radio-label input {
+            accent-color: var(--ui-accent);
+        }
+
+        .setting-radio-label.active {
+            color: #fff;
+        }
+
+        .close-stats-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: auto;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            pointer-events: auto;
+        }
+
+        .close-stats-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+
+        #app {
+            position: relative;
             /* iPad対応（画面内に収める） */
-            width: 100%; height: 100%;
-            max-width: 177.78vh; /* 16:9 の最大幅 */
-            max-height: 56.25vw; /* 16:9 の最大高さ */
+            width: 100%;
+            height: 100%;
+            max-width: 177.78vh;
+            /* 16:9 の最大幅 */
+            max-height: 56.25vw;
+            /* 16:9 の最大高さ */
             margin: auto;
-            
+
             /* 白い線の原因となる影を削除 */
             box-shadow: none;
-            
+
             background: #000;
         }
 
-        .bg-image { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1; image-rendering: pixelated; filter: brightness(0.65) contrast(1.1); }
-        .lights-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
-        
+        .bg-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            image-rendering: pixelated;
+            filter: brightness(0.65) contrast(1.1);
+        }
+
+        .lights-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
         /* 通常の窓 */
-        .light { position: absolute; background-color: var(--light-base); box-shadow: 0 0 6px 1px var(--light-glow); mix-blend-mode: screen; opacity: 0; transition: opacity 3s ease-in-out, background-color 3s; }
-        .light.is-active { opacity: 1; }
-        .light.is-dev-room { background-color: var(--light-dev) !important; box-shadow: 0 0 10px 2px var(--dev-glow) !important; z-index: 3; }
+        .light {
+            position: absolute;
+            background-color: var(--light-base);
+            box-shadow: 0 0 6px 1px var(--light-glow);
+            mix-blend-mode: screen;
+            opacity: 0;
+            transition: opacity 3s ease-in-out, background-color 3s;
+        }
+
+        .light.is-active {
+            opacity: 1;
+        }
+
+        .light.is-dev-room {
+            background-color: var(--light-dev) !important;
+            box-shadow: 0 0 10px 2px var(--dev-glow) !important;
+            z-index: 3;
+        }
 
         /* 休憩中の窓スタイル */
         .light.is-resting {
@@ -65,13 +290,18 @@
         /* 自分の部屋の明かり（窓ガラスへの反射と枠の照り返し） */
         .room-reflection {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 10; /* 背景画像より手前、UIより奥 */
-            pointer-events: none; /* クリックを透過 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            /* 背景画像より手前、UIより奥 */
+            pointer-events: none;
+            /* クリックを透過 */
             opacity: 0;
-            transition: opacity 2s ease-in-out; /* ふんわり点灯 */
-            
+            transition: opacity 2s ease-in-out;
+            /* ふんわり点灯 */
+
             /* A案: グレア */
             background: radial-gradient(circle at 50% 150%, rgba(255, 200, 100, 0.2), transparent 70%);
             /* B案: 窓枠の照り返し */
@@ -79,136 +309,417 @@
             /* フィルター */
             backdrop-filter: sepia(20%) brightness(1.1);
         }
-        
+
         /* 点灯状態 */
         .room-reflection.is-active {
             opacity: 1;
         }
 
         /* UI */
-        .dashboard { 
-            position: absolute; 
+        .dashboard {
+            position: absolute;
             /* 配置ロジック整理（横揺れ防止） */
-            left: 50%; 
-            bottom: 5%; 
-            transform: translateX(-50%); /* 常にX軸は中央 */
-            
-            z-index: 100; 
-            display: flex; flex-direction: row; align-items: center; gap: 20px; 
-            background: var(--ui-bg); padding: 8px 24px; border-radius: 30px; 
-            backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.05); 
+            left: 50%;
+            bottom: 5%;
+            transform: translateX(-50%);
+            /* 常にX軸は中央 */
+
+            z-index: 100;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 20px;
+            background: var(--ui-bg);
+            padding: 12px 28px;
+            border-radius: 40px;
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--ui-border);
+            box-shadow: var(--shadow-soft);
             /* トランジション調整 */
             transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        .dashboard.focus-mode { opacity: 0.4; } .dashboard.focus-mode:hover { opacity: 1; }
-        
+
+        .dashboard.focus-mode {
+            opacity: 0.4;
+        }
+
+        .dashboard.focus-mode:hover {
+            opacity: 1;
+        }
+
         /* 休憩中のUIスタイル変更 */
         .dashboard.rest-mode {
             border-color: var(--ui-rest);
             box-shadow: 0 0 15px rgba(0, 200, 255, 0.1);
         }
-        .dashboard.rest-mode .timer-display { color: var(--ui-rest); }
 
-        .info-group { display: flex; flex-direction: column; gap: 2px; }
-        .neighbor-count { font-size: 10px; opacity: 0.5; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-        .save-status { font-size: 9px; opacity: 0.5; color: #888; margin-left: 2px; }
-        .save-status.saved { color: #4CAF50; }
-        .total-time { font-size: 10px; opacity: 0.7; color: #aaa; letter-spacing: 0.5px; }
+        .dashboard.rest-mode .timer-display {
+            color: var(--ui-rest);
+        }
 
-        .live-dot { width: 6px; height: 6px; background-color: #4CAF50; border-radius: 50%; box-shadow: 0 0 4px #4CAF50; }
-        .timer-display { font-family: 'Courier New', Courier, monospace; font-size: 24px; font-weight: bold; letter-spacing: 1px; transition: color 0.5s; }
-        .controls { display: flex; gap: 15px; align-items: center; }
-        button { background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 11px; padding: 4px 8px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
-        button:hover { color: #fff; }
-        button.primary { color: var(--ui-accent); font-weight: bold; border: 1px solid rgba(255, 204, 0, 0.3); border-radius: 15px; padding: 6px 16px; }
-        button.primary:hover { background: rgba(255, 204, 0, 0.1); border-color: var(--ui-accent); }
-        .mode-text { font-size: 10px; color: #888; cursor: pointer; } .mode-text:hover { color: #ccc; }
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
 
-        .tab-nav { position: absolute; top: 20px; left: 20px; z-index: 101; display: flex; gap: 10px; transition: opacity 0.3s; }
-        .tab-btn { background: var(--ui-bg); border: 1px solid rgba(255,255,255,0.1); color: #aaa; padding: 8px 16px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); cursor: pointer; }
-        .tab-btn.active { color: var(--ui-accent); border-color: var(--ui-accent); font-weight: bold; }
+        .neighbor-count {
+            font-size: 10px;
+            opacity: 0.5;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
 
-        .stats-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 90; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        .stats-screen.visible { opacity: 1; pointer-events: auto; }
-        .chart-container { width: 80%; height: 60%; position: relative; }
-        .period-selector { display: flex; gap: 10px; margin-bottom: 20px; }
-        .period-btn { font-size: 12px; color: #888; cursor: pointer; padding: 4px 10px; border-bottom: 2px solid transparent; }
-        .period-btn.active { color: #fff; border-bottom-color: var(--ui-accent); }
-        .empty-logs { color: #666; font-size: 12px; margin-top: 20px; }
+        .save-status {
+            font-size: 9px;
+            opacity: 0.5;
+            color: #888;
+            margin-left: 2px;
+        }
 
-        #rotate-message { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; }
-        .rotate-icon { font-size: 40px; margin-bottom: 20px; animation: rotatePhone 2s infinite; }
-        @media (orientation: portrait) { #rotate-message { display: flex; } #app { display: none; } }
-        @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
+        .save-status.saved {
+            color: #4CAF50;
+        }
 
-        /* 時計モード用のスタイル */
+        .total-time {
+            font-size: 10px;
+            opacity: 0.7;
+            color: #aaa;
+            letter-spacing: 0.5px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #4CAF50;
+            border-radius: 50%;
+            box-shadow: 0 0 4px #4CAF50;
+        }
+
+        .timer-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: color 0.5s;
+        }
+
+        .timer-display.clickable {
+            cursor: pointer;
+        }
+
+        .timer-display.clickable:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 4px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        button {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 11px;
+            padding: 4px 8px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        button:hover {
+            color: #fff;
+        }
+
+        button.primary {
+            color: var(--ui-accent);
+            font-weight: bold;
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            border-radius: 15px;
+            padding: 6px 16px;
+        }
+
+        button.primary:hover {
+            background: rgba(255, 204, 0, 0.1);
+            border-color: var(--ui-accent);
+        }
+
+        .mode-text {
+            font-size: 10px;
+            color: #888;
+            cursor: pointer;
+        }
+
+        .mode-text:hover {
+            color: #ccc;
+        }
+
+        .mode-text {
+            font-size: 10px;
+            color: #888;
+            cursor: pointer;
+        }
+
+        .mode-text:hover {
+            color: #ccc;
+        }
+
+        .top-left-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            display: flex;
+            gap: 10px;
+            transition: opacity 0.3s;
+        }
+
+        .icon-circle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .icon-circle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        .icon-circle-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .tab-btn {
+            background: var(--ui-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            backdrop-filter: blur(4px);
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            color: var(--ui-accent);
+            border-color: var(--ui-accent);
+            font-weight: bold;
+        }
+
+        .stats-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 90;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .stats-screen.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .chart-container {
+            width: 80%;
+            height: 60%;
+            position: relative;
+        }
+
+        .period-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .period-btn {
+            font-size: 12px;
+            color: #888;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-bottom: 2px solid transparent;
+        }
+
+        .period-btn.active {
+            color: #fff;
+            border-bottom-color: var(--ui-accent);
+        }
+
+        .empty-logs {
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        /* Mobile Responsive & Orientation */
+
+        #rotate-message {
+            display: none !important;
+        }
+
+        /* Portrait Mode Styles */
+        @media (orientation: portrait) {
+            .bg-image {
+                /* Cover ensures image covers screen, centered */
+                object-fit: cover;
+                object-position: center;
+            }
+
+            .dashboard {
+                flex-direction: column;
+                justify-content: center;
+                gap: 30px;
+                top: 50%;
+                /* Center vertically in portrait */
+                transform: translate(-50%, -50%);
+                padding-bottom: 0;
+            }
+
+            .timer-display {
+                font-size: 20vw;
+                /* Larger font for portrait */
+            }
+
+            .timer-controls {
+                margin-top: 20px;
+            }
+
+            /* Adjust controls position */
+            .top-left-controls {
+                top: 20px;
+                left: 20px;
+            }
+
+            /* Stack lights layer properly */
+            .lights-layer {
+                /* Warning: Windows might be misaligned in cover mode */
+                background-size: cover;
+                background-position: center;
+            }
+        }
+
+        @keyframes rotatePhone {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            50% {
+                transform: rotate(90deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
         /* 時計モード時のダッシュボード */
         #app.clock-mode .dashboard {
             /* 配置ロジック変更 (X軸維持、Y軸中央へ) */
-            top: 50%; 
+            top: 50%;
             bottom: auto;
-            transform: translate(-50%, -50%); /* X:-50% Y:-50% */
-            
-            width: 100%; 
+            transform: translate(-50%, -50%);
+            /* X:-50% Y:-50% */
+
+            width: 100%;
             height: 100%;
-            
+
             justify-content: center;
             flex-direction: column;
             gap: 25px;
             padding: 0;
-            
+
             background: transparent;
             border: none;
             box-shadow: none;
             backdrop-filter: none;
         }
+
         /* 時計モード時のタイマー文字サイズ */
         /* 極細(100)、文字間隔標準(0)で背景を見やすく */
-        #app.clock-mode .timer-display { 
-            font-size: 22vw; 
+        #app.clock-mode .timer-display {
+            font-size: 22vw;
             /* Webフォント 'Inter' を優先指定 */
             font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             font-weight: 100;
             letter-spacing: 0;
-            line-height: 1; 
-            text-shadow: 0 0 30px rgba(0,0,0,0.8);
+            line-height: 1;
+            text-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
             width: 100%;
             text-align: center;
             font-variant-numeric: tabular-nums;
         }
+
         /* 時計モード時に不要な要素を隠す */
         #app.clock-mode .info-group,
-        #app.clock-mode .controls button:not(.icon-btn):not(.primary) { display: none; }
-        
+        #app.clock-mode .controls button:not(.icon-btn):not(.primary) {
+            display: none;
+        }
+
         /* 時計モード時のコントロール配置調整 */
-        #app.clock-mode .controls { 
+        #app.clock-mode .controls {
             /* 絶対配置で画面下へ移動し、数字と分離 */
             position: absolute;
             bottom: 15%;
             left: 50%;
             transform: translateX(-50%);
-            
-            gap: 10px; 
-            flex-direction: column; 
+
+            gap: 10px;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
         }
-        
+
         /* アイコンボタンのスタイル */
         .icon-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: #eee;
-            width: 44px; height: 44px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             cursor: pointer;
-            display: flex; justify-content: center; align-items: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             transition: all 0.2s;
             padding: 0;
             /* 通常時は薄くして主張を弱める & 上に余白 */
             opacity: 0.3;
             margin-top: 20px;
         }
+
         .icon-btn:hover {
             background: rgba(255, 255, 255, 0.25);
             border-color: #fff;
@@ -216,415 +727,819 @@
             /* ホバー時にハッキリ表示 */
             opacity: 1;
         }
+
         /* SVGアイコンのスタイル */
         .icon-btn svg {
-            width: 20px; height: 20px;
+            width: 20px;
+            height: 20px;
             stroke: currentColor;
-            stroke-width: 1.5; /* 細めの線画 */
+            stroke-width: 1.5;
+            /* 細めの線画 */
             fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         /* 座標設定 */
-        .w-0 { top: 22%; left: 21%; width: 3%; height: 4%; } .w-1 { top: 33%; left: 21%; width: 3%; height: 4%; } .w-2 { top: 44.5%; left: 21%; width: 3%; height: 4%; } .w-3 { top: 22%; left: 26.3%; width: 3%; height: 4%; } .w-4 { top: 33%; left: 26.3%; width: 2.8%; height: 4.1%; } .w-5 { top: 44.5%; left: 26.3%; width: 2.8%; height: 4%; }
-        .w-6 { top: 22%; left: 32%; width: 1.5%; height: 4%; } .w-7 { top: 33%; left: 32%; width: 1.5%; height: 4%; } .w-8 { top: 44.5%; left: 32%; width: 1.5%; height: 4%; } .w-9 { top: 22%; left: 38.7%; width: 4%; height: 4%; } .w-10 { top: 33%; left: 38.7%; width: 4%; height: 4%; } .w-11 { top: 44.5%; left: 38.7%; width: 4%; height: 4%; }
-        .w-12 { top: 22%; left: 45%; width: 3%; height: 4%; } .w-13 { top: 33%; left: 45%; width: 3%; height: 4%; } 
-        .w-14 { top: 44.5%; left: 45%; width: 3%; height: 4%; } /* Dev Room */
-        .w-15 { top: 22%; left: 50.2%; width: 3%; height: 4%; } .w-16 { top: 33%; left: 50.2%; width: 3%; height: 4%; } .w-17 { top: 44.5%; left: 50.2%; width: 3%; height: 4%; } .w-18 { top: 22%; left: 56.2%; width: 4%; height: 3.7%; } .w-19 { top: 33%; left: 56.2%; width: 4%; height: 3.7%; }
-        .w-20 { top: 44.5%; left: 56.2%; width: 4%; height: 3.6%; } .w-21 { top: 22%; left: 65.4%; width: 1.5%; height: 3.6%; } .w-22 { top: 33%; left: 65.4%; width: 1.5%; height: 3.7%; } .w-23 { top: 44.5%; left: 65.4%; width: 1.5%; height: 3.6%; } .w-24 { top: 22%; left: 69%; width: 2.8%; height: 3.6%; } .w-25 { top: 33%; left: 69%; width: 2.8%; height: 4%; }
-        .w-26 { top: 44.5%; left: 69%; width: 2.8%; height: 3.8%; } .w-27 { top: 22%; left: 75.5%; width: 3.8%; height: 3%; } .w-28 { top: 33%; left: 75.5%; width: 3.8%; height: 3.8%; } .w-29 { top: 44.5%; left: 75.5%; width: 3.8%; height: 3.7%; }
+        .w-0 {
+            top: 22%;
+            left: 21%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-1 {
+            top: 33%;
+            left: 21%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-2 {
+            top: 44.5%;
+            left: 21%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-3 {
+            top: 22%;
+            left: 26.3%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-4 {
+            top: 33%;
+            left: 26.3%;
+            width: 2.8%;
+            height: 4.1%;
+        }
+
+        .w-5 {
+            top: 44.5%;
+            left: 26.3%;
+            width: 2.8%;
+            height: 4%;
+        }
+
+        .w-6 {
+            top: 22%;
+            left: 32%;
+            width: 1.5%;
+            height: 4%;
+        }
+
+        .w-7 {
+            top: 33%;
+            left: 32%;
+            width: 1.5%;
+            height: 4%;
+        }
+
+        .w-8 {
+            top: 44.5%;
+            left: 32%;
+            width: 1.5%;
+            height: 4%;
+        }
+
+        .w-9 {
+            top: 22%;
+            left: 38.7%;
+            width: 4%;
+            height: 4%;
+        }
+
+        .w-10 {
+            top: 33%;
+            left: 38.7%;
+            width: 4%;
+            height: 4%;
+        }
+
+        .w-11 {
+            top: 44.5%;
+            left: 38.7%;
+            width: 4%;
+            height: 4%;
+        }
+
+        .w-12 {
+            top: 22%;
+            left: 45%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-13 {
+            top: 33%;
+            left: 45%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-14 {
+            top: 44.5%;
+            left: 45%;
+            width: 3%;
+            height: 4%;
+        }
+
+        /* Dev Room */
+        .w-15 {
+            top: 22%;
+            left: 50.2%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-16 {
+            top: 33%;
+            left: 50.2%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-17 {
+            top: 44.5%;
+            left: 50.2%;
+            width: 3%;
+            height: 4%;
+        }
+
+        .w-18 {
+            top: 22%;
+            left: 56.2%;
+            width: 4%;
+            height: 3.7%;
+        }
+
+        .w-19 {
+            top: 33%;
+            left: 56.2%;
+            width: 4%;
+            height: 3.7%;
+        }
+
+        .w-20 {
+            top: 44.5%;
+            left: 56.2%;
+            width: 4%;
+            height: 3.6%;
+        }
+
+        .w-21 {
+            top: 22%;
+            left: 65.4%;
+            width: 1.5%;
+            height: 3.6%;
+        }
+
+        .w-22 {
+            top: 33%;
+            left: 65.4%;
+            width: 1.5%;
+            height: 3.7%;
+        }
+
+        .w-23 {
+            top: 44.5%;
+            left: 65.4%;
+            width: 1.5%;
+            height: 3.6%;
+        }
+
+        .w-24 {
+            top: 22%;
+            left: 69%;
+            width: 2.8%;
+            height: 3.6%;
+        }
+
+        .w-25 {
+            top: 33%;
+            left: 69%;
+            width: 2.8%;
+            height: 4%;
+        }
+
+        .w-26 {
+            top: 44.5%;
+            left: 69%;
+            width: 2.8%;
+            height: 3.8%;
+        }
+
+        .w-27 {
+            top: 22%;
+            left: 75.5%;
+            width: 3.8%;
+            height: 3%;
+        }
+
+        .w-28 {
+            top: 33%;
+            left: 75.5%;
+            width: 3.8%;
+            height: 3.8%;
+        }
+
+        .w-29 {
+            top: 44.5%;
+            left: 75.5%;
+            width: 3.8%;
+            height: 3.7%;
+        }
     </style>
 </head>
+
 <body>
 
-<div id="rotate-message"><div class="rotate-icon">📱</div><p>Please rotate your device<br>to enter the apartment.</p></div>
-
-<div id="app">
-
-    <img src="bg.jpg" class="bg-image">
-
-    <div class="room-reflection" :class="{ 'is-active': isRunning }"></div>
-
-    <div class="tab-nav">
-        <div class="tab-btn" v-if="!isRunning && !isResting" :class="{ active: currentTab === 'room' }" @click="currentTab = 'room'">ROOM</div>
-        
-        <div class="tab-btn" v-if="!isRunning && !isResting" :class="{ active: currentTab === 'stats' }" @click="openStats">RECORDS</div>
+    <div id="rotate-message">
+        <div class="rotate-icon">📱</div>
+        <p>Please rotate your device<br>to enter the apartment.</p>
     </div>
-    
-    <div class="lights-layer">
-        <div v-for="(isOn, index) in windows" :key="index" class="light" 
-            :class="['w-' + index, { 
+
+    <div id="app">
+
+        <img src="bg.jpg" class="bg-image">
+
+        <div class="room-reflection" :class="{ 'is-active': isRunning }"></div>
+
+        <div class="top-left-controls" v-if="!isRunning && !isClockMode && !isResting">
+            <div class="icon-circle-btn" @click="openStats" title="Records">
+                <svg viewBox="0 0 24 24">
+                    <path d="M18 20V10M12 20V4M6 20v-6"></path>
+                </svg>
+            </div>
+            <div class="icon-circle-btn" @click="showSettings = true" title="Settings">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+            </div>
+        </div>
+
+        <div class="toast-container">
+            <div v-for="msg in toasts" :key="msg.id" class="toast">
+                {{ msg.text }}
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <transition name="fade">
+            <div class="modal-overlay" v-if="showSettings" @click.self="saveSettings">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <span>Focus Settings</span>
+                        <span class="modal-close" @click="saveSettings">✕</span>
+                    </div>
+
+                    <div class="setting-row">
+                        <span>Mode</span>
+                        <div class="setting-radio-group">
+                            <label class="setting-radio-label" :class="{ active: settings.mode === 'timer' }">
+                                <input type="radio" value="timer" v-model="settings.mode"> Timer
+                            </label>
+                            <label class="setting-radio-label" :class="{ active: settings.mode === 'stopwatch' }">
+                                <input type="radio" value="stopwatch" v-model="settings.mode"> Stopwatch
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-row" v-if="settings.mode === 'timer'">
+                        <span>Focus Time (min)</span>
+                        <input type="number" v-model.number="settings.pomodoro" class="setting-input" min="1" max="120">
+                    </div>
+                    <div class="setting-row">
+                        <span>Break Time (min)</span>
+                        <input type="number" v-model.number="settings.rest" class="setting-input" min="1" max="60">
+                    </div>
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button class="primary" @click="saveSettings">SAVE & CLOSE</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <div class="lights-layer">
+            <div v-for="(isOn, index) in windows" :key="index" class="light" :class="['w-' + index, { 
                 'is-active': isOn && index !== myRoomIndex, 
                 /* 電気がついている時だけ青いスタイルを適用する */
                 'is-dev-room': index === 14 && isOn,
                 'is-resting': isResting && index === myRoomIndex
             }]"></div>
-    </div>
-    
-    <div class="dashboard" :class="{ 'focus-mode': isRunning, 'rest-mode': isResting }" v-show="currentTab === 'room'">
-        <div class="info-group">
-            <div class="neighbor-count"><div class="live-dot"></div>{{ activeNeighbors }} Neighbors</div>
-            <div class="total-time">Total: {{ formattedTotalTime }}<span class="save-status" :class="{ 'saved': isSaved }">●</span></div>
         </div>
-        
-        <div class="timer-display">{{ formattedTime }}</div>
-        
-        <div class="controls">
-            <button class="primary" @click="handleMainButton">
-                {{ isResting ? 'SKIP BREAK' : (isRunning ? 'STOP' : 'START') }}
-            </button>
-            
-            <button v-if="!isRunning && !isResting && time > 0" @click="resetTimer">✕</button>
 
-            <button v-if="!isClockMode" class="icon-btn" @click="isClockMode = true" title="Maximize">
-                <svg viewBox="0 0 24 24">
-                    <path d="M15 3h6v6"></path>
-                    <path d="M9 21H3v-6"></path>
-                    <path d="M21 3l-7 7"></path>
-                    <path d="M3 21l7-7"></path>
+        <div class=" top-left-controls" v-if="!isRunning && !isResting">
+            <!-- Toggle Screen (Records <-> Room) -->
+            <div class="icon-circle-btn" @click="toggleScreen"
+                :title="currentTab === 'room' ? 'Go to Records' : 'Back to Room'">
+                <!-- Chart Icon (Show in Room) -->
+                <svg v-if="currentTab === 'room'" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <path d="M18 20V10M12 20V4M6 20v-6"></path>
+                </svg>
+                <!-- Home Icon (Show in Stats) -->
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </div>
+            <div class="icon-circle-btn" @click="toggleMode"
+                :title="mode === 'pomodoro' ? 'Switch to Stopwatch' : 'Switch to Timer'">
+                <!-- Show Stopwatch icon if current is Pomodoro (Timer) -->
+                <svg v-if="mode === 'pomodoro'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <!-- Show Timer icon if current is Stopwatch -->
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 2h4"></path>
+                    <path d="M12 14v-4"></path>
+                    <path d="M4 13a8 8 0 0 1 8-7 8 8 0 1 1-8 7"></path>
+                </svg>
+            </div>
+        </div>
+
+        <div class="dashboard" :class="{ 'focus-mode': isRunning, 'rest-mode': isResting }"
+            v-show="currentTab === 'room'">
+            <div class="info-group">
+                <div class="neighbor-count">
+                    <div class="live-dot"></div>{{ activeNeighbors }} Neighbors
+                </div>
+                <div class="total-time">Total: {{ formattedTotalTime }}<span class="save-status"
+                        :class="{ 'saved': isSaved }">●</span></div>
+            </div>
+
+            <div class="timer-display" @click="cycleTimerDuration" :class="{ 'clickable': mode === 'pomodoro' }">
+                {{ formattedTime }}
+            </div>
+
+            <div class="controls">
+                <button class="primary" @click="handleMainButton">
+                    {{ isResting ? 'SKIP BREAK' : (isRunning ? 'STOP' : 'START') }}
+                </button>
+
+                <button v-if="!isRunning && !isResting && time > 0" @click="resetTimer">✕</button>
+
+                <button v-if="!isClockMode" class="icon-btn" @click="isClockMode = true" title="Maximize">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M15 3h6v6"></path>
+                        <path d="M9 21H3v-6"></path>
+                        <path d="M21 3l-7 7"></path>
+                        <path d="M3 21l7-7"></path>
+                    </svg>
+                </button>
+
+                <button v-if="isClockMode" class="icon-btn" @click="isClockMode = false" title="Minimize">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 14h6v6"></path>
+                        <path d="M20 10h-6V4"></path>
+                        <path d="M14 10l7-7"></path>
+                        <path d="M10 14l-7 7"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-screen" :class="{ visible: currentTab === 'stats' }">
+            <button class="close-stats-btn" @click="currentTab = 'room'" title="Back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="width: 20px; height: 20px;">
+                    <path d="M15 18l-6-6 6-6"></path>
                 </svg>
             </button>
+            <div class="period-selector">
+                <div class="period-btn" :class="{ active: chartPeriod === 'day' }" @click="renderChart('day')">DAY
+                </div>
+                <div class="period-btn" :class="{ active: chartPeriod === 'week' }" @click="renderChart('week')">
+                    WEEK
+                </div>
+                <div class="period-btn" :class="{ active: chartPeriod === 'month' }" @click="renderChart('month')">
+                    MONTH
+                </div>
+            </div>
+            <div class="chart-container">
+                <div v-if="hasNoLogs" class="empty-logs">No records yet. Start focusing!</div>
+            </div>
 
-            <button v-if="isClockMode" class="icon-btn" @click="isClockMode = false" title="Minimize">
-                <svg viewBox="0 0 24 24">
-                    <path d="M4 14h6v6"></path>
-                    <path d="M20 10h-6V4"></path>
-                    <path d="M14 10l7-7"></path>
-                    <path d="M10 14l-7 7"></path>
-                </svg>
-            </button>
+            <div style="margin-top: 15px; font-size: 10px; color: #444; font-family: monospace;">
+                ID: {{ userId }} <span @click="importUser"
+                    style="cursor: pointer; text-decoration: underline; margin-left: 5px; color: #666;">[SYNC]</span>
+            </div>
+
+            <div style="margin-top: 15px; font-size: 9px; color: #333; cursor: pointer; text-decoration: underline;"
+                @click="forceResetLights">
+                [RESET ALL LIGHTS]
+            </div>
         </div>
-    </div>
 
-    <div class="stats-screen" :class="{ visible: currentTab === 'stats' }">
-        <div class="period-selector">
-            <div class="period-btn" :class="{ active: chartPeriod === 'day' }" @click="renderChart('day')">DAY</div>
-            <div class="period-btn" :class="{ active: chartPeriod === 'week' }" @click="renderChart('week')">WEEK</div>
-            <div class="period-btn" :class="{ active: chartPeriod === 'month' }" @click="renderChart('month')">MONTH</div>
-        </div>
-        <div class="chart-container">
-            <canvas id="statsChart"></canvas>
-            <div v-if="hasNoLogs" class="empty-logs">No records yet. Start focusing!</div>
-        </div>
-        
-        <div style="margin-top: 15px; font-size: 10px; color: #444; font-family: monospace;">
-            ID: {{ userId }} <span @click="importUser" style="cursor: pointer; text-decoration: underline; margin-left: 5px; color: #666;">[SYNC]</span>
-        </div>
-        
-        <div style="margin-top: 10px; font-size: 9px; color: #333; cursor: pointer; text-decoration: underline;" @click="forceResetLights">
-            [RESET ALL LIGHTS]
-        </div>
-    </div>
-</div>
+        <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+            import { getDatabase, ref, set, update, onValue, onDisconnect, push, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+            import { createApp, ref as vueRef, computed, onMounted, watch } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, update, onValue, onDisconnect, push, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-    import { createApp, ref as vueRef, computed, onMounted, watch } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyApsAaSIFEh1BhRgl_sFPssLMOPLjnOqaE",
-        authDomain: "late-light.firebaseapp.com",
-        databaseURL: "https://late-light-default-rtdb.firebaseio.com",
-        projectId: "late-light",
-        storageBucket: "late-light.firebasestorage.app",
-        messagingSenderId: "785315819458",
-        appId: "1:785315819458:web:feda9dc1fb93f497f6b05b",
-        measurementId: "G-C4HKZB6L22"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    createApp({
-        setup() {
-            const userId = vueRef('');
-            const totalSeconds = vueRef(0);
-            const isDev = vueRef(false);
-            const isSaved = vueRef(true);
-            const DEV_ROOM_INDEX = 14; 
-            const sessionStartTime = vueRef(null);
-            
-            const currentTab = vueRef('room'); 
-            const chartPeriod = vueRef('day');
-            const hasNoLogs = vueRef(false);
-            let chartInstance = null; 
-            
-            const isClockMode = vueRef(true);
-
-            // isClockModeの変更を監視し、手動で#appにクラスを付与する
-            watch(isClockMode, (newVal) => {
-                const appEl = document.getElementById('app');
-                if (newVal) appEl.classList.add('clock-mode');
-                else appEl.classList.remove('clock-mode');
-            }, { immediate: true });
-
-            const windows = vueRef(new Array(30).fill(false));
-            const isRunning = vueRef(false);
-            const isResting = vueRef(false);
-            const time = vueRef(0);
-            const timerInterval = vueRef(null);
-            // ▼▼▼ 追加: ハートビート用 ▼▼▼
-            const heartbeatInterval = vueRef(null);
-            // ▲▲▲ 追加終了 ▲▲▲
-            const mode = vueRef('countup');
-            const myRoomIndex = vueRef(null);
-            
-            const POMODORO_TIME = 25 * 60; // 25分
-            const REST_TIME = 5 * 60;      // 5分
-
-            const initUser = async () => {
-                let id = localStorage.getItem('qa_user_id');
-                if (!id) {
-                    id = 'user_' + Math.random().toString(36).substring(2, 12);
-                    localStorage.setItem('qa_user_id', id);
-                }
-                userId.value = id;
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('role') === 'dev') localStorage.setItem('qa_is_dev', 'true');
-                isDev.value = localStorage.getItem('qa_is_dev') === 'true';
-
-                const userRef = ref(db, 'users/' + id + '/total_seconds');
-                const snapshot = await get(userRef);
-                if (snapshot.exists()) totalSeconds.value = snapshot.val();
-                else set(userRef, 0);
+            const firebaseConfig = {
+                apiKey: "AIzaSyApsAaSIFEh1BhRgl_sFPssLMOPLjnOqaE",
+                authDomain: "late-light.firebaseapp.com",
+                databaseURL: "https://late-light-default-rtdb.firebaseio.com",
+                projectId: "late-light",
+                storageBucket: "late-light.firebasestorage.app",
+                messagingSenderId: "785315819458",
+                appId: "1:785315819458:web:feda9dc1fb93f497f6b05b",
+                measurementId: "G-C4HKZB6L22"
             };
 
-            onMounted(() => {
-                initUser();
-                onValue(ref(db, 'windows'), (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        const newStatus = new Array(30).fill(false);
-                        Object.keys(data).forEach(key => { if (data[key] === true) newStatus[key] = true; });
-                        windows.value = newStatus;
-                    } else windows.value = new Array(30).fill(false);
-                });
-                // ▼▼▼ 追加: ゾンビデータ掃除 ▼▼▼
-                cleanupZombies();
-                // ▲▲▲ 追加終了 ▲▲▲
-            });
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
 
-            // ▼▼▼ 修正: ゾンビ掃除機能（記録がない古いデータも消すように強化） ▼▼▼
-            const cleanupZombies = async () => {
-                // 窓の状態と、ハートビートの両方を取得する
-                const winSnapshot = await get(ref(db, 'windows'));
-                const hbSnapshot = await get(ref(db, 'window_heartbeats'));
-                
-                if (winSnapshot.exists()) {
-                    const windowsData = winSnapshot.val();
-                    const heartbeats = hbSnapshot.exists() ? hbSnapshot.val() : {};
-                    const now = Date.now();
-                    const FIVE_MINUTES = 5 * 60 * 1000;
+            createApp({
+                setup() {
+                    const userId = vueRef('');
+                    const totalSeconds = vueRef(0);
+                    const isDev = vueRef(false);
+                    const isSaved = vueRef(true);
+                    const DEV_ROOM_INDEX = 14;
+                    const sessionStartTime = vueRef(null);
 
-                    Object.keys(windowsData).forEach(index => {
-                        // もし電気がついているなら(trueなら)チェックする
-                        if (windowsData[index] === true) {
-                            const lastBeat = heartbeats[index];
+                    // UI States
+                    const currentTab = vueRef('room');
+                    const chartPeriod = vueRef('day');
+                    const hasNoLogs = vueRef(false);
+                    const showSettings = vueRef(false);
+                    let chartInstance = null;
 
-                            // 条件1: ハートビート記録がそもそもない (昔のゾンビ)
-                            // 条件2: ハートビートが5分以上前 (最近のゾンビ)
-                            if (!lastBeat || (now - lastBeat > FIVE_MINUTES)) {
-                                console.log(`Cleaning up zombie room: ${index}`);
-                                // 該当の窓をOFFにする
-                                set(ref(db, 'windows/' + index), false);
-                                // ハートビート記録があれば消しておく
-                                set(ref(db, 'window_heartbeats/' + index), null);
+                    // Toasts
+                    const toasts = vueRef([]);
+                    let toastId = 0;
+                    const showToast = (text) => {
+                        const id = toastId++;
+                        toasts.value.push({ id, text });
+                        setTimeout(() => {
+                            toasts.value = toasts.value.filter(t => t.id !== id);
+                        }, 4000);
+                    };
+
+
+                    // Settings (persisted in localStorage)
+                    // Default: Stopwatch mode (Countup)
+                    const savedSettings = JSON.parse(localStorage.getItem('qa_settings') || '{"pomodoro": 25, "rest": 5, "mode": "stopwatch"}');
+                    // Force Stopwatch default (Reset preference if it was Timer)
+                    if (!savedSettings.mode || savedSettings.mode === 'pomodoro' || savedSettings.mode === 'timer') {
+                        savedSettings.mode = 'stopwatch';
+                    }
+                    const settings = vueRef(savedSettings);
+
+                    const toggleMode = () => {
+                        if (mode.value === 'pomodoro') {
+                            settings.value.mode = 'stopwatch';
+                            mode.value = 'countup';
+                            showToast('Switched to Stopwatch');
+                        } else {
+                            settings.value.mode = 'timer';
+                            mode.value = 'pomodoro';
+                            showToast('Switched to Timer');
+                        }
+                        localStorage.setItem('qa_settings', JSON.stringify(settings.value));
+                        if (!isRunning.value && !isResting.value) resetTimer();
+                    };
+
+                    const saveSettings = () => {
+                        localStorage.setItem('qa_settings', JSON.stringify(settings.value));
+                        showSettings.value = false;
+                        // Update internal mode to match settings
+                        mode.value = settings.value.mode === 'stopwatch' ? 'countup' : 'pomodoro';
+
+                        showToast('Settings saved.');
+                        if (!isRunning.value && !isResting.value) resetTimer();
+                    };
+
+                    // Cycle Timer Logic
+                    const TIMER_PRESETS = [25, 50, 60, 90];
+                    const cycleTimerDuration = () => {
+                        if (mode.value !== 'pomodoro') return;
+
+                        const currentMin = Math.floor((settings.value.focusTimeSeconds || (settings.value.pomodoro * 60)) / 60);
+                        let nextIndex = TIMER_PRESETS.findIndex(p => p > currentMin);
+                        if (nextIndex === -1) nextIndex = 0; // Wrap around
+
+                        const nextMin = TIMER_PRESETS[nextIndex];
+                        const nextSec = nextMin * 60;
+
+                        settings.value.focusTimeSeconds = nextSec;
+                        settings.value.pomodoro = nextMin;
+                        localStorage.setItem('qa_settings', JSON.stringify(settings.value));
+
+                        // Reset timer display
+                        if (!isRunning.value && !isResting.value) time.value = 0;
+
+                        showToast(`Timer set to ${nextMin} min`);
+                    };
+
+                    const formatTimeStr = (s) => {
+                        const h = Math.floor(s / 3600);
+                        const m = Math.floor((s % 3600) / 60);
+                        const sec = s % 60;
+                        if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+                        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+                    };
+
+                    const FOCUS_TIME = computed(() => settings.value.focusTimeSeconds || (settings.value.pomodoro * 60));
+
+                    const toggleScreen = () => {
+                        currentTab.value = currentTab.value === 'room' ? 'stats' : 'room';
+                        if (currentTab.value === 'stats') renderChart('day');
+                    };
+
+                    const isClockMode = vueRef(true);
+
+                    // isClockModeの変更を監視し、手動で#appにクラスを付与する
+                    watch(isClockMode, (newVal) => {
+                        const appEl = document.getElementById('app');
+                        if (newVal) appEl.classList.add('clock-mode');
+                        else appEl.classList.remove('clock-mode');
+                    }, { immediate: true });
+
+                    const windows = vueRef(new Array(30).fill(false));
+                    const isRunning = vueRef(false);
+                    const isResting = vueRef(false);
+                    const time = vueRef(0);
+                    const timerInterval = vueRef(null);
+                    // ▼▼▼ 追加: ハートビート用 ▼▼▼
+                    const heartbeatInterval = vueRef(null);
+                    // ▲▲▲ 追加終了 ▲▲▲
+                    const mode = vueRef(settings.value.mode === 'stopwatch' ? 'countup' : 'pomodoro');
+                    const myRoomIndex = vueRef(null);
+
+
+                    const POMODORO_TIME = computed(() => settings.value.pomodoro * 60);
+                    const REST_TIME = computed(() => settings.value.rest * 60);
+
+                    const initUser = async () => {
+                        let id = localStorage.getItem('qa_user_id');
+                        if (!id) {
+                            id = 'user_' + Math.random().toString(36).substring(2, 12);
+                            localStorage.setItem('qa_user_id', id);
+                        }
+                        userId.value = id;
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.get('role') === 'dev') localStorage.setItem('qa_is_dev', 'true');
+                        isDev.value = localStorage.getItem('qa_is_dev') === 'true';
+
+                        const userRef = ref(db, 'users/' + id + '/total_seconds');
+                        const snapshot = await get(userRef);
+                        if (snapshot.exists()) totalSeconds.value = snapshot.val();
+                        else set(userRef, 0);
+                    };
+
+                    onMounted(() => {
+                        initUser();
+                        onValue(ref(db, 'windows'), (snapshot) => {
+                            const data = snapshot.val();
+                            if (data) {
+                                const newStatus = new Array(30).fill(false);
+                                Object.keys(data).forEach(key => { if (data[key] === true) newStatus[key] = true; });
+                                windows.value = newStatus;
+                            } else windows.value = new Array(30).fill(false);
+                        });
+                        // ▼▼▼ 追加: ゾンビデータ掃除 ▼▼▼
+                        cleanupZombies();
+                        // ▲▲▲ 追加終了 ▲▲▲
+                    });
+
+                    // ▼▼▼ 修正: ゾンビ掃除機能（記録がない古いデータも消すように強化） ▼▼▼
+                    const cleanupZombies = async () => {
+                        // 窓の状態と、ハートビートの両方を取得する
+                        const winSnapshot = await get(ref(db, 'windows'));
+                        const hbSnapshot = await get(ref(db, 'window_heartbeats'));
+
+                        if (winSnapshot.exists()) {
+                            const windowsData = winSnapshot.val();
+                            const heartbeats = hbSnapshot.exists() ? hbSnapshot.val() : {};
+                            const now = Date.now();
+                            const FIVE_MINUTES = 5 * 60 * 1000;
+
+                            Object.keys(windowsData).forEach(index => {
+                                // もし電気がついているなら(trueなら)チェックする
+                                if (windowsData[index] === true) {
+                                    const lastBeat = heartbeats[index];
+
+                                    // 条件1: ハートビート記録がそもそもない (昔のゾンビ)
+                                    // 条件2: ハートビートが5分以上前 (最近のゾンビ)
+                                    if (!lastBeat || (now - lastBeat > FIVE_MINUTES)) {
+                                        console.log(`Cleaning up zombie room: ${index}`);
+                                        // 該当の窓をOFFにする
+                                        set(ref(db, 'windows/' + index), false);
+                                        // ハートビート記録があれば消しておく
+                                        set(ref(db, 'window_heartbeats/' + index), null);
+                                    }
+                                }
+                            });
+                        }
+                    };
+                    // ▲▲▲ 修正終了 ▲▲▲
+
+                    const saveProgress = () => {
+                        isSaved.value = false;
+                        update(ref(db, 'users/' + userId.value), { total_seconds: totalSeconds.value, last_active: Date.now() }).then(() => {
+                            isSaved.value = true;
+                            // showToast('Progress saved'); // Optional: too noisy
+                        });
+                    };
+
+                    const logSession = (durationSec) => {
+                        if (durationSec < 5) return;
+                        push(ref(db, 'users/' + userId.value + '/logs'), { start: sessionStartTime.value, end: Date.now(), duration: durationSec, mode: mode.value });
+                    };
+
+                    const turnOnMyLight = () => {
+                        if (myRoomIndex.value === null) {
+                            if (isDev.value) myRoomIndex.value = DEV_ROOM_INDEX;
+                            else {
+                                let idx; do { idx = Math.floor(Math.random() * 30); } while (idx === DEV_ROOM_INDEX);
+                                myRoomIndex.value = idx;
                             }
                         }
+                        const myLightRef = ref(db, 'windows/' + myRoomIndex.value);
+                        set(myLightRef, true);
+                        onDisconnect(myLightRef).set(false);
+                    };
+
+                    const turnOffMyLight = () => {
+                        if (myRoomIndex.value !== null) {
+                            const myLightRef = ref(db, 'windows/' + myRoomIndex.value);
+                            set(myLightRef, false);
+                            onDisconnect(myLightRef).cancel();
+                            myRoomIndex.value = null;
+                        }
+                    };
+
+                    const handleMainButton = () => {
+                        if (isResting.value) {
+                            finishRest();
+                        } else if (isRunning.value) {
+                            stopTimer();
+                        } else {
+                            startTimer();
+                        }
+                    };
+
+                    const startTimer = () => {
+                        isRunning.value = true;
+                        turnOnMyLight();
+                        sessionStartTime.value = Date.now();
+
+                        // ▼▼▼ 追加: ハートビート開始 ▼▼▼
+                        updateHeartbeat();
+                        heartbeatInterval.value = setInterval(updateHeartbeat, 60 * 1000);
+                        // ▲▲▲ 追加終了 ▲▲▲
+
+                        timerInterval.value = setInterval(() => {
+                            time.value++;
+                            if (!isResting.value) {
+                                totalSeconds.value++;
+                                if (time.value % 10 === 0) saveProgress();
+                            }
+                            if (!isResting.value && mode.value === 'pomodoro' && time.value >= POMODORO_TIME.value) {
+                                startRest();
+                            }
+                            if (isResting.value && time.value >= REST_TIME.value) {
+                                finishRest();
+                            }
+                        }, 1000);
+                    };
+
+                    // ▼▼▼ 追加: ハートビート更新 ▼▼▼
+                    const updateHeartbeat = () => {
+                        if (myRoomIndex.value !== null) {
+                            const hbRef = ref(db, 'window_heartbeats/' + myRoomIndex.value);
+                            set(hbRef, Date.now());
+                            onDisconnect(hbRef).remove();
+                        }
+                    };
+                    // ▲▲▲ 追加終了 ▲▲▲
+
+                    const startRest = () => {
+                        logSession(time.value);
+                        saveProgress();
+                        isResting.value = true;
+                        time.value = 0;
+                    };
+
+                    const finishRest = () => {
+                        isResting.value = false;
+                        stopTimer();
+                        showToast('Break is over. Ready to focus?');
+                    };
+
+                    const stopTimer = () => {
+                        isRunning.value = false;
+                        clearInterval(timerInterval.value);
+
+                        // ▼▼▼ 追加: ハートビート停止 ▼▼▼
+                        clearInterval(heartbeatInterval.value);
+                        if (myRoomIndex.value !== null) {
+                            set(ref(db, 'window_heartbeats/' + myRoomIndex.value), null);
+                        }
+                        // ▲▲▲ 追加終了 ▲▲▲
+
+                        turnOffMyLight();
+                        if (!isResting.value && time.value > 0) {
+                            saveProgress();
+                            logSession(time.value);
+                        }
+                        isResting.value = false;
+                    };
+
+                    const resetTimer = () => { stopTimer(); time.value = 0; };
+
+                    const activeNeighbors = computed(() => windows.value.filter((isOn, index) => isOn && index !== myRoomIndex.value).length);
+
+                    const formattedTime = computed(() => {
+                        let s = time.value;
+                        if (isResting.value) {
+                            // Break is always countdown
+                            s = Math.max(0, REST_TIME.value - time.value);
+                        } else if (mode.value === 'pomodoro') {
+                            // Timer Mode: Countdown
+                            s = Math.max(0, FOCUS_TIME.value - time.value);
+                        }
+                        // Stopwatch Mode: Countup (Default s = time.value)
+
+                        return formatTimeStr(s);
                     });
+
+                    const formattedTotalTime = computed(() => {
+                        const h = Math.floor(totalSeconds.value / 3600); const m = Math.floor((totalSeconds.value % 3600) / 60);
+                        return `${h}h ${m}m`;
+                    });
+
+                    const openStats = () => { currentTab.value = 'stats'; renderChart('day'); };
+                    const renderChart = async (period) => {
+                        chartPeriod.value = period;
+                        const logsRef = ref(db, 'users/' + userId.value + '/logs');
+                        const snapshot = await get(logsRef);
+                        if (!snapshot.exists()) { hasNoLogs.value = true; if (chartInstance) chartInstance.destroy(); return; }
+                        hasNoLogs.value = false;
+                        const logs = Object.values(snapshot.val());
+                        const now = new Date(); const labels = []; const dataPoints = []; const grouped = {};
+
+                        if (period === 'day') {
+                            for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(now.getDate() - i); labels.push((d.getMonth() + 1) + '/' + d.getDate()); grouped[d.toISOString().split('T')[0]] = 0; }
+                            logs.forEach(log => { const k = new Date(log.start).toISOString().split('T')[0]; if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                        } else if (period === 'week') {
+                            for (let i = 7; i >= 0; i--) {
+                                const d = new Date(); d.setDate(now.getDate() - (i * 7));
+                                const day = d.getDay();
+                                const diff = d.getDate() - day + (day == 0 ? -6 : 1);
+                                const monday = new Date(d); monday.setDate(diff);
+                                labels.push((monday.getMonth() + 1) + '/' + monday.getDate() + '~');
+                                grouped[getWeekKey(d)] = 0;
+                            }
+                            logs.forEach(log => { const k = getWeekKey(new Date(log.start)); if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                        } else if (period === 'month') {
+                            for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(now.getMonth() - i); labels.push((d.getMonth() + 1) + '月'); grouped[d.getFullYear() + '-' + (d.getMonth() + 1)] = 0; }
+                            logs.forEach(log => { const d = new Date(log.start); const k = d.getFullYear() + '-' + (d.getMonth() + 1); if (grouped[k] !== undefined) grouped[k] += log.duration; });
+                        }
+
+                        Object.values(grouped).forEach(v => dataPoints.push(parseFloat((v / 3600).toFixed(1))));
+
+                        const ctx = document.getElementById('statsChart').getContext('2d');
+                        if (chartInstance) chartInstance.destroy();
+                        chartInstance = new Chart(ctx, {
+                            type: 'bar',
+                            data: { labels, datasets: [{ label: 'Hours', data: dataPoints, backgroundColor: 'rgba(255, 204, 0, 0.5)', borderColor: 'rgba(255, 204, 0, 1)', borderWidth: 1 }] },
+                            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+                        });
+                    };
+                    const getWeekKey = (d) => { const s = new Date(d.getFullYear(), 0, 1); const w = Math.ceil((((d - s) / 86400000) + s.getDay() + 1) / 7); return d.getFullYear() + '-' + w; };
+
+                    const importUser = () => {
+                        const inputId = prompt("Enter your previous User ID to sync data:", userId.value);
+                        if (inputId && inputId !== userId.value) {
+                            if (confirm("Switch user? Current local data will be replaced.")) {
+                                localStorage.setItem('qa_user_id', inputId);
+                                window.location.reload();
+                            }
+                        }
+                    };
+
+                    const forceResetLights = () => {
+                        if (confirm("Fix 'Stuck Lights'?\n(All windows will be turned off.)")) {
+                            set(ref(db, 'windows'), null);
+                            set(ref(db, 'window_heartbeats'), null); // ハートビートも消す
+                            showToast("Database cleared and lights reset.");
+                        }
+                    };
+
+                    return { windows, activeNeighbors, isRunning, isResting, time, mode, formattedTime, formattedTotalTime, handleMainButton, resetTimer, myRoomIndex, isSaved, currentTab, chartPeriod, hasNoLogs, openStats, renderChart, userId, importUser, isClockMode, forceResetLights, toasts, showSettings, settings, saveSettings, toggleMode, toggleScreen, cycleTimerDuration };
                 }
-            };
-            // ▲▲▲ 修正終了 ▲▲▲
-
-            const saveProgress = () => {
-                isSaved.value = false;
-                update(ref(db, 'users/' + userId.value), { total_seconds: totalSeconds.value, last_active: Date.now() }).then(() => isSaved.value = true);
-            };
-
-            const logSession = (durationSec) => {
-                if (durationSec < 5) return; 
-                push(ref(db, 'users/' + userId.value + '/logs'), { start: sessionStartTime.value, end: Date.now(), duration: durationSec, mode: mode.value });
-            };
-
-            const turnOnMyLight = () => {
-                if (myRoomIndex.value === null) {
-                    if (isDev.value) myRoomIndex.value = DEV_ROOM_INDEX;
-                    else {
-                        let idx; do { idx = Math.floor(Math.random() * 30); } while (idx === DEV_ROOM_INDEX);
-                        myRoomIndex.value = idx;
-                    }
-                }
-                const myLightRef = ref(db, 'windows/' + myRoomIndex.value);
-                set(myLightRef, true);
-                onDisconnect(myLightRef).set(false);
-            };
-
-            const turnOffMyLight = () => {
-                if (myRoomIndex.value !== null) {
-                    const myLightRef = ref(db, 'windows/' + myRoomIndex.value);
-                    set(myLightRef, false);
-                    onDisconnect(myLightRef).cancel();
-                    myRoomIndex.value = null;
-                }
-            };
-
-            const handleMainButton = () => {
-                if (isResting.value) {
-                    finishRest(); 
-                } else if (isRunning.value) {
-                    stopTimer(); 
-                } else {
-                    startTimer(); 
-                }
-            };
-
-            const startTimer = () => {
-                isRunning.value = true;
-                turnOnMyLight();
-                sessionStartTime.value = Date.now();
-                
-                // ▼▼▼ 追加: ハートビート開始 ▼▼▼
-                updateHeartbeat();
-                heartbeatInterval.value = setInterval(updateHeartbeat, 60 * 1000);
-                // ▲▲▲ 追加終了 ▲▲▲
-                
-                timerInterval.value = setInterval(() => {
-                    time.value++;
-                    if (!isResting.value) {
-                        totalSeconds.value++;
-                        if (time.value % 10 === 0) saveProgress();
-                    }
-                    if (!isResting.value && mode.value === 'pomodoro' && time.value >= POMODORO_TIME) {
-                        startRest();
-                    }
-                    if (isResting.value && time.value >= REST_TIME) {
-                        finishRest();
-                    }
-                }, 1000);
-            };
-
-            // ▼▼▼ 追加: ハートビート更新 ▼▼▼
-            const updateHeartbeat = () => {
-                if (myRoomIndex.value !== null) {
-                    const hbRef = ref(db, 'window_heartbeats/' + myRoomIndex.value);
-                    set(hbRef, Date.now());
-                    onDisconnect(hbRef).remove();
-                }
-            };
-            // ▲▲▲ 追加終了 ▲▲▲
-
-            const startRest = () => {
-                logSession(time.value);
-                saveProgress();
-                isResting.value = true;
-                time.value = 0; 
-            };
-
-            const finishRest = () => {
-                isResting.value = false;
-                stopTimer(); 
-                alert('Break is over. Ready to focus?');
-            };
-
-            const stopTimer = () => {
-                isRunning.value = false;
-                clearInterval(timerInterval.value);
-                
-                // ▼▼▼ 追加: ハートビート停止 ▼▼▼
-                clearInterval(heartbeatInterval.value);
-                if (myRoomIndex.value !== null) {
-                    set(ref(db, 'window_heartbeats/' + myRoomIndex.value), null);
-                }
-                // ▲▲▲ 追加終了 ▲▲▲
-
-                turnOffMyLight();
-                if (!isResting.value && time.value > 0) {
-                    saveProgress();
-                    logSession(time.value);
-                }
-                isResting.value = false;
-            };
-
-            const resetTimer = () => { stopTimer(); time.value = 0; };
-            
-            const activeNeighbors = computed(() => windows.value.filter((isOn, index) => isOn && index !== myRoomIndex.value).length);
-            
-            const formattedTime = computed(() => {
-                let s = time.value;
-                if (isResting.value) s = Math.max(0, REST_TIME - time.value);
-                else if (mode.value === 'pomodoro') s = Math.max(0, POMODORO_TIME - time.value);
-                const m = Math.floor(s / 60); const sec = s % 60;
-                return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-            });
-            
-            const formattedTotalTime = computed(() => {
-                const h = Math.floor(totalSeconds.value / 3600); const m = Math.floor((totalSeconds.value % 3600) / 60);
-                return `${h}h ${m}m`;
-            });
-            const setMode = (m) => { mode.value = m; resetTimer(); };
-
-            const openStats = () => { currentTab.value = 'stats'; renderChart('day'); };
-            const renderChart = async (period) => {
-                chartPeriod.value = period;
-                const logsRef = ref(db, 'users/' + userId.value + '/logs');
-                const snapshot = await get(logsRef);
-                if (!snapshot.exists()) { hasNoLogs.value = true; if (chartInstance) chartInstance.destroy(); return; }
-                hasNoLogs.value = false;
-                const logs = Object.values(snapshot.val());
-                const now = new Date(); const labels = []; const dataPoints = []; const grouped = {};
-
-                if (period === 'day') {
-                    for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(now.getDate() - i); labels.push((d.getMonth()+1)+'/'+d.getDate()); grouped[d.toISOString().split('T')[0]] = 0; }
-                    logs.forEach(log => { const k = new Date(log.start).toISOString().split('T')[0]; if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                } else if (period === 'week') {
-                    for (let i = 7; i >= 0; i--) { 
-                        const d = new Date(); d.setDate(now.getDate() - (i*7)); 
-                        const day = d.getDay();
-                        const diff = d.getDate() - day + (day == 0 ? -6 : 1);
-                        const monday = new Date(d); monday.setDate(diff);
-                        labels.push((monday.getMonth()+1) + '/' + monday.getDate() + '~'); 
-                        grouped[getWeekKey(d)] = 0; 
-                    }
-                    logs.forEach(log => { const k = getWeekKey(new Date(log.start)); if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                } else if (period === 'month') {
-                    for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(now.getMonth()-i); labels.push((d.getMonth()+1)+'月'); grouped[d.getFullYear()+'-'+(d.getMonth()+1)] = 0; }
-                    logs.forEach(log => { const d = new Date(log.start); const k = d.getFullYear()+'-'+(d.getMonth()+1); if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                }
-                
-                Object.values(grouped).forEach(v => dataPoints.push(parseFloat((v/3600).toFixed(1))));
-
-                const ctx = document.getElementById('statsChart').getContext('2d');
-                if (chartInstance) chartInstance.destroy();
-                chartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: { labels, datasets: [{ label: 'Hours', data: dataPoints, backgroundColor: 'rgba(255, 204, 0, 0.5)', borderColor: 'rgba(255, 204, 0, 1)', borderWidth: 1 }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
-                });
-            };
-            const getWeekKey = (d) => { const s = new Date(d.getFullYear(), 0, 1); const w = Math.ceil((((d - s) / 86400000) + s.getDay() + 1) / 7); return d.getFullYear() + '-' + w; };
-
-            const importUser = () => {
-                const inputId = prompt("Enter your previous User ID to sync data:", userId.value);
-                if (inputId && inputId !== userId.value) {
-                    if (confirm("Switch user? Current local data will be replaced.")) {
-                        localStorage.setItem('qa_user_id', inputId);
-                        window.location.reload();
-                    }
-                }
-            };
-
-            const forceResetLights = () => {
-                if (confirm("Fix 'Stuck Lights'?\n(All windows will be turned off.)")) {
-                    set(ref(db, 'windows'), null);
-                    set(ref(db, 'window_heartbeats'), null); // ハートビートも消す
-                    alert("Database cleared.");
-                }
-            };
-
-            return { windows, activeNeighbors, isRunning, isResting, time, mode, formattedTime, formattedTotalTime, setMode, handleMainButton, resetTimer, myRoomIndex, isSaved, currentTab, chartPeriod, hasNoLogs, openStats, renderChart, userId, importUser, isClockMode, forceResetLights };
-        }
-    }).mount('#app');
-</script>
+            }).mount('#app');
+        </script>
 </body>
+
 </html>
