@@ -1,27 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Trace of Time | Midnight Focus</title>
+    <title>Reports | Midnight Focus</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        :root {
+            --bg: #000000;
+            --text: #ffffff;
+            --text-dim: #888888;
+            --gold: #FFDBAC;
+            --cyan: #00FFFF;
+            --bar-bg: #1A1A1A;
+            --card-surface: rgba(20, 20, 20, 0.4);
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
         body {
             margin: 0;
             padding: 0;
-            background: #0a0a0f;
-            color: #eee;
-            font-family: 'Times New Roman', 'YuMincho', serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
             overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* 1. Background Image (same as Room) */
+        /* Ambient Background */
         body::before {
             content: '';
             position: fixed;
@@ -29,638 +41,664 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: url('bg-portrait.jpg') no-repeat center center/cover;
-            filter: blur(20px) brightness(0.3);
+            background: radial-gradient(circle at 50% 10%, rgba(255, 219, 172, 0.08), transparent 60%);
             z-index: -2;
-        }
-
-        /* 2. Global Texture Overlay (Noise/Paper feel) */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background:
-                radial-gradient(circle at 50% 50%, rgba(255, 220, 180, 0.03), transparent 80%),
-                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
             pointer-events: none;
-            z-index: -1;
         }
 
-        /* Back Icon Button */
-        .back-icon-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            justify-content: center;
+        /* --- Header: Back & Tabs --- */
+        .top-bar {
+            padding: calc(10px + var(--safe-top)) 20px 10px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            z-index: 100;
-            backdrop-filter: blur(8px);
-            color: #ccc;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-btn {
+            color: var(--text-dim);
             text-decoration: none;
-            /* In case it's an anchor */
-        }
-
-        .back-icon-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: #ffdbac;
-            /* Amber accent */
-            transform: scale(1.1);
-            border-color: rgba(255, 219, 172, 0.3);
-            box-shadow: 0 4px 20px rgba(255, 219, 172, 0.2);
-        }
-
-        .back-icon-btn svg {
-            width: 22px;
-            height: 22px;
-            stroke: currentColor;
-            stroke-width: 1.5;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        /* Immersion Container (Formerly Card) */
-        .stats-container {
-            width: 100%;
-            max-width: 800px;
-            /* Wider immersive view */
-            height: 100vh;
-            /* Full screen feel */
-            padding: 40px 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
-
-            /* Subtly differentiate area but no hard borders */
-            background: radial-gradient(circle at center, rgba(20, 20, 25, 0.4) 0%, transparent 70%);
-        }
-
-        /* Header */
-        .stats-header {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 40px;
-            position: relative;
-        }
-
-        /* Underline with fade edges */
-        .stats-header::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            width: 60px;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #ffdbac, transparent);
-            opacity: 0.5;
-        }
-
-        .stats-title-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .stats-icon {
-            font-size: 28px;
-            text-shadow: 0 0 15px rgba(255, 219, 172, 0.4);
-        }
-
-        .stats-title {
-            margin: 0;
-            font-size: 32px;
-            letter-spacing: 2px;
-            font-weight: normal;
-            font-style: italic;
-            color: #ffdbac;
-            text-shadow: 0 0 15px rgba(255, 219, 172, 0.2);
-        }
-
-        /* Segmented Control */
-        .glass-segmented-control {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-bottom: 50px;
-        }
-
-        .segment-option {
-            font-size: 16px;
-            cursor: pointer;
-            opacity: 0.4;
-            transition: 0.4s;
-            position: relative;
-            padding-bottom: 8px;
-            letter-spacing: 1px;
-        }
-
-        .segment-option:hover {
-            opacity: 0.7;
-        }
-
-        .segment-option.active {
-            opacity: 1;
-            color: #ffdbac;
-            text-shadow: 0 0 8px rgba(255, 219, 172, 0.2);
-        }
-
-        .segment-option.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            /* Wider underline */
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #ffdbac, transparent);
-        }
-
-        /* Chart Wrapper */
-        .chart-wrapper {
-            position: relative;
-            flex-grow: 1;
-            max-height: 400px;
-            width: 100%;
-            margin-bottom: 40px;
-        }
-
-        .empty-state {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            opacity: 0.5;
             font-size: 15px;
-            color: #aaa;
-            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
-        /* Stats Footer */
-        .stats-footer {
+        .tab-group {
+            display: flex;
+            gap: 20px;
+            background: rgba(40, 40, 40, 0.5);
+            padding: 4px;
+            border-radius: 20px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--gold);
+            color: #000;
+        }
+
+        /* --- Layout Grid --- */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 0;
+            /* Full height usage */
+            display: grid;
+            gap: 20px;
+            /* Mobile Default: Stacked (Bar top for timeline focus? Or Donut? User said Donut Left, Bar Right usually implies Sidebar/Main) */
+            /* User Request: "Donut Left, Bar Right" */
+            grid-template-columns: 1fr;
+        }
+
+        /* Desktop: Side by Side - Swapped: Main(Bar) Left, Side(Donut) Right */
+        @media (min-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr 300px;
+                /* Bar(Wide) | Donut(Fixed) */
+                grid-template-rows: 1fr;
+                padding-bottom: 20px;
+                overflow: hidden;
+            }
+        }
+
+        /* --- Components --- */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 0;
+        }
+
+        /* Date Nav */
+        .date-nav {
             display: flex;
             justify-content: center;
-            gap: 60px;
-            padding-top: 20px;
-        }
-
-        .stat-pill {
-            display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 20px;
+            padding: 10px 0;
+            flex-shrink: 0;
         }
 
-        .stat-label {
-            font-size: 11px;
-            color: #888;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            opacity: 0.7;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: normal;
-            color: #eee;
-            font-family: 'Times New Roman', serif;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .stat-value.mono {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            opacity: 0.5;
-            margin-top: 5px;
-        }
-
-        .sync-link {
-            font-size: 11px;
-            color: #ffdbac;
+        .nav-arrow {
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 20px;
+            padding: 10px;
             cursor: pointer;
-            text-decoration: none;
-            opacity: 0.4;
-            transition: 0.2s;
-            margin-top: 5px;
         }
 
-        .sync-link:hover {
-            opacity: 0.9;
+        .nav-label {
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 140px;
+            text-align: center;
         }
 
-        /* =========================================
-           MIDNIGHT CALENDAR
-           ========================================= */
-        .calendar-view {
-            width: 100%;
-            height: 100%;
+        /* Cards */
+        .card {
+            background: var(--card-surface);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
-            animation: fadeIn 0.5s ease-out;
         }
 
-        .calendar-header {
+        /* Main Chart */
+        .chart-container-large {
+            width: 100%;
+            flex: 1;
+            min-height: 300px;
+            position: relative;
+        }
+
+        /* Donut & Summary Area */
+        .donut-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 180px;
+            margin: 0 auto 15px;
+            aspect-ratio: 1;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item .label {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .stat-item .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .tag-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tag-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 0 10px;
+            font-size: 13px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .month-label {
-            font-size: 24px;
-            color: #ffdbac;
-            font-style: italic;
-        }
-
-        .cal-nav-btn {
-            background: none;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #888;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
+        .tag-name {
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: 0.2s;
-        }
-
-        .cal-nav-btn:hover {
-            color: #fff;
-            border-color: #ffdbac;
-            background: rgba(255, 219, 172, 0.1);
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
             gap: 8px;
-            width: 100%;
-            flex-grow: 1;
         }
 
-        .cal-day-header {
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .tag-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
         }
 
-        .cal-day {
-            position: relative;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 4px;
-            min-height: 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #666;
-            transition: 0.3s;
-            border: 1px solid transparent;
-        }
-
-        .cal-day.today {
-            border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: #eee;
-        }
-
-        .cal-day.empty {
-            background: transparent;
-        }
-
-        /* Heatmap Levels */
-        .cal-day.level-1 {
-            background: rgba(255, 219, 172, 0.1);
-            box-shadow: 0 0 5px rgba(255, 180, 100, 0.05);
-            color: #ccc;
-        }
-
-        .cal-day.level-2 {
-            background: rgba(255, 219, 172, 0.2);
-            box-shadow: 0 0 8px rgba(255, 180, 100, 0.1);
-            color: #fff;
-        }
-
-        .cal-day.level-3 {
-            background: rgba(255, 219, 172, 0.35);
-            box-shadow: 0 0 12px rgba(255, 180, 100, 0.2);
-            color: #fff;
-            text-shadow: 0 0 5px #ffdbac;
-            border: 1px solid rgba(255, 219, 172, 0.3);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        [v-cloak] {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-    <a href="index.html" class="back-icon-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
-    </a>
-
-    <div id="app" class="stats-container">
-        <div class="stats-header">
-            <div class="stats-title-group">
-                <span class="stats-icon">🌙</span>
-                <h2 class="stats-title">Trace of Time</h2>
+    <div id="app" v-cloak>
+        <!-- Header -->
+        <div class="top-bar">
+            <a href="index.html" class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M15 18l-6-6 6-6" />
+                </svg>
+                Room
+            </a>
+            <div class="tab-group">
+                <button class="tab-btn" :class="{ active: viewMode === 'week' }"
+                    @click="setViewMode('week')">Week</button>
+                <button class="tab-btn" :class="{ active: viewMode === 'month' }"
+                    @click="setViewMode('month')">Month</button>
             </div>
+            <div style="width: 20px;"></div>
         </div>
 
-        <!-- Period Switcher -->
-        <div class="glass-segmented-control">
-            <div class="segment-option" :class="{ active: chartPeriod === 'day' }" @click="renderChart('day')">Today
-            </div>
-            <div class="segment-option" :class="{ active: chartPeriod === 'week' }" @click="renderChart('week')">
-                This Week</div>
-            <div class="segment-option" :class="{ active: chartPeriod === 'month' }" @click="renderChart('month')">Month
-            </div>
-            <div class="segment-option" :class="{ active: chartPeriod === 'calendar' }"
-                @click="renderChart('calendar')">Calendar
-            </div>
+        <!-- Navigator: Centered below tabs -->
+        <div class="date-nav">
+            <button class="nav-arrow" @click="shiftPeriod(-1)">‹</button>
+            <div class="nav-label">{{ navLabel }}</div>
+            <button class="nav-arrow" @click="shiftPeriod(1)">›</button>
         </div>
 
-        <!-- Main Chart Area -->
-        <div class="chart-wrapper" v-if="chartPeriod !== 'calendar'">
-            <canvas id="focusChart"></canvas>
-            <div v-if="hasNoLogs" class="empty-state">
-                <span class="empty-icon">🍃</span>
-                <p>No records yet...</p>
+        <div class="main-content">
+            <!-- 1. Main Panel (Bar Chart) - Now on Left -->
+            <div class="main-panel">
+                <div class="card" style="flex: 1;">
+                    <div class="chart-container-large">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                    <div class="info-text" v-if="viewMode==='week'">
+                        *Target Line (2h)
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Calendar Area -->
-        <div class="calendar-view" v-if="chartPeriod === 'calendar'">
-            <div class="calendar-header">
-                <button class="cal-nav-btn" @click="changeMonth(-1)">‹</button>
-                <div class="month-label">{{ currentMonthLabel }}</div>
-                <button class="cal-nav-btn" @click="changeMonth(1)">›</button>
-            </div>
-            <div class="calendar-grid">
-                <div class="cal-day-header" v-for="d in ['S','M','T','W','T','F','S']" :key="d">{{d}}</div>
-                <div v-for="(day, index) in calendarDays" :key="index" class="cal-day" :class="[
-                        { 'today': day.isToday, 'empty': !day.date },
-                        day.level ? 'level-' + day.level : ''
-                     ]" :title="day.minutes ? day.minutes + ' min' : ''">
-                    <span v-if="day.date">{{ day.date }}</span>
+            <!-- 2. Side Panel (Donut & Summary) - Now on Right -->
+            <div class="side-panel">
+                <div class="card" style="flex: 1;">
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <div class="label">Total</div>
+                            <div class="value">{{ totalTimeDisplay }}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="label">Daily Avg</div>
+                            <div class="value">{{ averageTimeDisplay }}</div>
+                        </div>
+                    </div>
+
+                    <div class="donut-wrapper">
+                        <canvas id="donutChart"></canvas>
+                        <!-- Center Text -->
+                        <div
+                            style="position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none;">
+                            <div style="font-size:10px; color:#aaa;">{{ donutLabel }}</div>
+                            <div style="font-size:18px; color:var(--text); font-weight:bold;">{{ donutValue }}</div>
+                        </div>
+                    </div>
+
+                    <div class="tag-list">
+                        <div v-for="t in tagRanking" :key="t.name" class="tag-row">
+                            <div class="tag-name">
+                                <div class="tag-dot" :style="{background: t.color}"></div>
+                                {{ t.name }}
+                            </div>
+                            <div style="color:var(--text-dim)">{{ t.percent }}%</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Summary / Footer -->
-        <div class="stats-footer">
-            <div class="stat-pill">
-                <span class="stat-label">Total Journey</span>
-                <span class="stat-value">{{ formattedTotalTime }}</span>
-            </div>
-            <div class="stat-pill">
-                <span class="stat-label">Identity</span>
-                <span class="stat-value mono">{{ userId ? userId.substring(0, 8) + '...' : 'Loading...' }}</span>
-                <span class="sync-link" @click="importUser">[Sync]</span>
-            </div>
-        </div>
     </div>
 
-    <script type="module">
-        import { createApp, ref as vueRef, computed, onMounted } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
-        import { db, ref, get, set, update, formatTimeStr, getWeekKey } from "./shared.js";
+    <!-- Global Builds for Local Execution -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script>
+        // --- Shared Logic Inlined (formerly shared.js) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyApsAaSIFEh1BhRgl_sFPssLMOPLjnOqaE",
+            authDomain: "late-light.firebaseapp.com",
+            databaseURL: "https://late-light-default-rtdb.firebaseio.com",
+            projectId: "late-light",
+            storageBucket: "late-light.firebasestorage.app",
+            messagingSenderId: "785315819458",
+            appId: "1:785315819458:web:feda9dc1fb93f497f6b05b",
+            measurementId: "G-C4HKZB6L22"
+        };
+
+        // Initialize Firebase (Compat)
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Helper: Format Seconds to MM:SS or HH:MM:SS
+        const formatTimeStr = (s) => {
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+            return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+        };
+
+        // --- Main Stats Logic ---
+        const { createApp, ref, computed, onMounted, watch } = Vue;
+
+        // --- Plugins ---
+        const barLabelPlugin = {
+            id: 'barLabels',
+            afterDatasetsDraw(chart, args, options) {
+                if (chart.canvas.id !== 'mainChart') return;
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, i) => {
+                    const meta = chart.getDatasetMeta(i);
+                    if (meta.hidden) return;
+                    meta.data.forEach((element, index) => {
+                        const val = dataset.data[index];
+                        if (val === 0) return; // Skip 0
+                        const label = Math.round(val * 10) / 10 + 'h';
+                        ctx.save();
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 11px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(label, element.x, element.y - 4);
+                        ctx.restore();
+                    });
+                });
+            }
+        };
+
+        const horizontalLinePlugin = {
+            id: 'horizontalLine',
+            afterDraw(chart, args, options) {
+                if (!options.yValue && options.yValue !== 0) return;
+                const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+                const yPixel = y.getPixelForValue(options.yValue);
+                if (yPixel < 0 || yPixel > chart.height) return;
+                ctx.save();
+                ctx.beginPath();
+                ctx.strokeStyle = options.color || '#ffffff';
+                ctx.lineWidth = 1;
+                if (options.dashed) ctx.setLineDash([4, 4]);
+                ctx.moveTo(left, yPixel);
+                ctx.lineTo(right, yPixel);
+                ctx.stroke();
+                if (options.label) {
+                    ctx.fillStyle = options.color || '#ffffff';
+                    ctx.font = '10px sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(options.label, right, yPixel - 4);
+                }
+                ctx.restore();
+            }
+        };
+
+        // Ensure Chart is defined (loaded from CDN in head)
+        if (typeof Chart !== 'undefined') {
+            Chart.register(barLabelPlugin, horizontalLinePlugin);
+        }
 
         createApp({
             setup() {
-                const userId = vueRef('');
-                const totalSeconds = vueRef(0);
-                const chartPeriod = vueRef('day');
-                const hasNoLogs = vueRef(false);
-                let chartInstance = null;
+                const viewMode = ref('week');
+                const currentDate = ref(new Date());
+                const logs = ref([]);
+                const selectedDay = ref(null);
 
-                // Calendar Specific
-                const currentDate = vueRef(new Date());
-                const calendarDays = vueRef([]);
+                let mainChart = null;
+                let donutChart = null;
 
-                const formattedTotalTime = computed(() => {
-                    const h = Math.floor(totalSeconds.value / 3600);
-                    const m = Math.floor((totalSeconds.value % 3600) / 60);
-                    return `${h}h ${m}m`;
-                });
-
-                const currentMonthLabel = computed(() => {
+                // --- Computed ---
+                const navLabel = computed(() => {
                     const d = currentDate.value;
-                    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                    return `${months[d.getMonth()]} ${d.getFullYear()}`;
+                    const y = d.getFullYear();
+                    const m = d.getMonth() + 1;
+                    if (viewMode.value === 'week') {
+                        // Week calculation
+                        const dCopy = new Date(d);
+                        dCopy.setDate(1);
+                        const dayOfWeek = dCopy.getDay(); // 0(Sun)..6(Sat)
+                        // Align to Mon start (1)
+                        const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                        const weekNum = Math.ceil((d.getDate() + offset) / 7);
+                        return `${y}年${m}月 第${weekNum}週`;
+                    } else {
+                        return `${y}年 ${m}月`;
+                    }
                 });
 
-                const initUser = async () => {
-                    let id = localStorage.getItem('qa_user_id');
-                    if (!id) {
-                        id = 'user_' + Math.random().toString(36).substring(2, 12);
-                        localStorage.setItem('qa_user_id', id);
-                    }
-                    userId.value = id;
-                    const userRef = ref(db, 'users/' + id + '/total_seconds');
-                    const snapshot = await get(userRef);
-                    if (snapshot.exists()) totalSeconds.value = snapshot.val();
-                    else set(userRef, 0);
-
-                    renderChart('day');
+                // --- Methods ---
+                const setViewMode = (m) => {
+                    viewMode.value = m;
+                    selectedDay.value = null;
+                    updateCharts();
                 };
 
-                const changeMonth = (delta) => {
+                const shiftPeriod = (delta) => {
                     const d = new Date(currentDate.value);
-                    d.setMonth(d.getMonth() + delta);
+                    selectedDay.value = null;
+                    if (viewMode.value === 'week') {
+                        d.setDate(d.getDate() + (delta * 7));
+                    } else {
+                        d.setMonth(d.getMonth() + delta);
+                    }
                     currentDate.value = d;
-                    renderCalendar();
                 };
 
-                const renderCalendar = async () => {
-                    const logsRef = ref(db, 'users/' + userId.value + '/logs');
-                    const snapshot = await get(logsRef);
-                    const logs = snapshot.exists() ? Object.values(snapshot.val()) : [];
+                const getPeriodRange = () => {
+                    const d = new Date(currentDate.value);
+                    if (viewMode.value === 'week') {
+                        const day = d.getDay();
+                        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Mon start
+                        const start = new Date(d.setDate(diff));
+                        const end = new Date(start);
+                        end.setDate(start.getDate() + 6);
+                        return { start, end };
+                    } else {
+                        const start = new Date(d.getFullYear(), d.getMonth(), 1);
+                        const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+                        return { start, end };
+                    }
+                };
 
-                    const year = currentDate.value.getFullYear();
-                    const month = currentDate.value.getMonth();
+                const filterLogs = () => {
+                    const { start, end } = getPeriodRange();
+                    start.setHours(0, 0, 0, 0);
+                    end.setHours(23, 59, 59, 999);
+                    return logs.value.filter(l => {
+                        const ld = new Date(l.start);
+                        return ld >= start && ld <= end;
+                    });
+                };
 
-                    // Create basic grid
-                    const firstDay = new Date(year, month, 1);
-                    const lastDay = new Date(year, month + 1, 0);
-                    const daysInMonth = lastDay.getDate();
-                    const startDay = firstDay.getDay(); // 0 = Sun
+                const updateCharts = () => {
+                    if (!mainChart || !donutChart) return;
 
-                    const days = [];
-                    // Empty slots
-                    for (let i = 0; i < startDay; i++) { days.push({ date: '' }); }
+                    const periodLogs = filterLogs();
+                    const { start, end } = getPeriodRange();
 
-                    // Group logs by YYYY-MM-DD
-                    const groupedLogs = {};
-                    logs.forEach(log => {
-                        const d = new Date(log.start);
-                        const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-                        if (!groupedLogs[k]) groupedLogs[k] = 0;
-                        groupedLogs[k] += log.duration;
+                    // 1. Prepare Bar Data
+                    const labels = [];
+                    const data = [];
+                    const bgColors = [];
+                    let totalVal = 0;
+                    const daysMap = new Map();
+
+                    const curr = new Date(start);
+                    while (curr <= end) {
+                        const key = curr.toDateString();
+                        daysMap.set(key, 0);
+                        if (viewMode.value === 'week') {
+                            labels.push(curr.toLocaleDateString('ja-JP', { weekday: 'short' }));
+                        } else {
+                            labels.push(curr.getDate());
+                        }
+                        curr.setDate(curr.getDate() + 1);
+                    }
+
+                    periodLogs.forEach(l => {
+                        const d = new Date(l.start);
+                        d.setHours(0, 0, 0, 0);
+                        const key = d.toDateString();
+                        if (daysMap.has(key)) daysMap.set(key, daysMap.get(key) + l.duration);
                     });
 
-                    const todayStr = `${new Date().getFullYear()}-${new Date().getMonth()}-${new Date().getDate()}`;
+                    for (let [key, val] of daysMap) {
+                        const h = val / 3600;
+                        data.push(h);
+                        totalVal += h;
 
-                    for (let i = 1; i <= daysInMonth; i++) {
-                        const dateKey = `${year}-${month}-${i}`;
-                        const totalSeconds = groupedLogs[dateKey] || 0;
-                        let level = 0;
-                        if (totalSeconds > 0) level = 1;
-                        if (totalSeconds > 3600) level = 2; // > 1h
-                        if (totalSeconds > 10800) level = 3; // > 3h
+                        const dObj = new Date(key);
+                        const isSelected = selectedDay.value &&
+                            dObj.getDate() === selectedDay.value.getDate() &&
+                            dObj.getMonth() === selectedDay.value.getMonth();
 
-                        days.push({
-                            date: i,
-                            isToday: dateKey === todayStr,
-                            level: level,
-                            minutes: Math.floor(totalSeconds / 60)
-                        });
+                        if (selectedDay.value) {
+                            bgColors.push(isSelected ? '#FFDBAC' : '#333333');
+                        } else {
+                            bgColors.push('#FFDBAC'); // All Gold by default
+                        }
                     }
-                    calendarDays.value = days;
+
+                    mainChart.data.labels = labels;
+                    mainChart.data.datasets[0].data = data;
+                    mainChart.data.datasets[0].backgroundColor = bgColors;
+
+                    // Plugin options
+                    const avg = totalVal / data.length;
+                    if (viewMode.value === 'week') {
+                        mainChart.options.plugins.horizontalLine = {
+                            yValue: 2, color: 'rgba(255,255,255,0.5)', dashed: true, label: 'Goal'
+                        };
+                        mainChart.options.scales.x.ticks.callback = (val, i) => labels[i];
+                    } else {
+                        mainChart.options.plugins.horizontalLine = {
+                            yValue: avg, color: 'rgba(50,205,50,0.8)', dashed: false, label: 'Avg'
+                        };
+                        mainChart.options.scales.x.ticks.callback = (val, i) => {
+                            const d = i + 1;
+                            return (d === 1 || d % 5 === 0) ? d : '';
+                        };
+                    }
+                    mainChart.update();
+
+                    // 2. Update Donut
+                    updateDonut(periodLogs);
+
+                    // 3. Stats
+                    const h = Math.floor(totalVal);
+                    const m = Math.round((totalVal - h) * 60);
+                    totalTimeDisplay.value = `${h}h ${m}m`;
+
+                    const avgH = Math.floor(avg);
+                    const avgM = Math.round((avg - avgH) * 60);
+                    averageTimeDisplay.value = `${avgH}h ${avgM}m`;
                 };
 
-                const renderChart = async (period) => {
-                    chartPeriod.value = period;
-                    if (period === 'calendar') {
-                        renderCalendar();
-                        return;
+                const updateDonut = (periodLogs) => {
+                    let targetLogs = periodLogs;
+                    if (selectedDay.value) {
+                        targetLogs = periodLogs.filter(l => {
+                            const d = new Date(l.start);
+                            return d.getDate() === selectedDay.value.getDate() &&
+                                d.getMonth() === selectedDay.value.getMonth() &&
+                                d.getFullYear() === selectedDay.value.getFullYear();
+                        });
+                        donutLabel.value = selectedDay.value.getDate() + '日';
+                    } else {
+                        donutLabel.value = 'Total';
                     }
 
-                    const logsRef = ref(db, 'users/' + userId.value + '/logs');
-                    const snapshot = await get(logsRef);
-                    if (!snapshot.exists()) { hasNoLogs.value = true; if (chartInstance) chartInstance.destroy(); return; }
-                    hasNoLogs.value = false;
-                    const logs = Object.values(snapshot.val());
-                    const now = new Date(); const labels = []; const dataPoints = []; const grouped = {};
+                    const tagMap = {};
+                    let sum = 0;
+                    targetLogs.forEach(l => {
+                        const t = l.tag || 'Focus';
+                        tagMap[t] = (tagMap[t] || 0) + l.duration;
+                        sum += l.duration;
+                    });
 
-                    if (period === 'day') {
-                        for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(now.getDate() - i); labels.push((d.getMonth() + 1) + '/' + d.getDate()); grouped[d.toISOString().split('T')[0]] = 0; }
-                        logs.forEach(log => { const k = new Date(log.start).toISOString().split('T')[0]; if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                    } else if (period === 'week') {
-                        for (let i = 7; i >= 0; i--) {
-                            const d = new Date(); d.setDate(now.getDate() - (i * 7));
-                            const day = d.getDay();
-                            const diff = d.getDate() - day + (day == 0 ? -6 : 1);
-                            const monday = new Date(d); monday.setDate(diff);
-                            labels.push((monday.getMonth() + 1) + '/' + monday.getDate() + '~');
-                            grouped[getWeekKey(d)] = 0;
-                        }
-                        logs.forEach(log => { const k = getWeekKey(new Date(log.start)); if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                    } else if (period === 'month') {
-                        for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(now.getMonth() - i); labels.push((d.getMonth() + 1) + '月'); grouped[d.getFullYear() + '-' + (d.getMonth() + 1)] = 0; }
-                        logs.forEach(log => { const d = new Date(log.start); const k = d.getFullYear() + '-' + (d.getMonth() + 1); if (grouped[k] !== undefined) grouped[k] += log.duration; });
-                    }
+                    const sorted = Object.entries(tagMap).sort((a, b) => b[1] - a[1]);
+                    const donutData = sorted.map(s => s[1] / 60);
+                    const donutLabels = sorted.map(s => s[0]);
+                    const colors = ['#FFDBAC', '#00FFFF', '#FF00FF', '#FFFF00', '#AAAAAA'];
 
-                    Object.values(grouped).forEach(v => dataPoints.push(parseFloat((v / 3600).toFixed(1))));
+                    donutChart.data.labels = donutLabels;
+                    donutChart.data.datasets[0].data = donutData;
+                    donutChart.data.datasets[0].backgroundColor = colors;
+                    donutChart.update();
 
-                    const ctx = document.getElementById('focusChart').getContext('2d');
-                    if (chartInstance) chartInstance.destroy();
+                    const h = Math.floor(sum / 3600);
+                    const m = Math.floor((sum % 3600) / 60);
+                    donutValue.value = h > 0 ? `${h}h${m}m` : `${m}m`;
 
-                    // Gradient For Emotional Vibe (Amber/Gold)
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-                    gradient.addColorStop(0, 'rgba(255, 219, 172, 0.4)');
-                    gradient.addColorStop(1, 'rgba(255, 219, 172, 0.0)');
+                    tagRanking.value = sorted.map((s, i) => ({
+                        name: s[0],
+                        percent: sum ? Math.round((s[1] / sum) * 100) : 0,
+                        color: colors[i % colors.length]
+                    }));
+                };
 
-                    chartInstance = new Chart(ctx, {
+                const initCharts = () => {
+                    // Main Bar
+                    const ctx = document.getElementById('mainChart').getContext('2d');
+                    mainChart = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels,
-                            datasets: [{
-                                label: 'Hours',
-                                data: dataPoints,
-                                backgroundColor: gradient,
-                                borderColor: 'rgba(255, 219, 172, 0.8)',
-                                borderWidth: 1,
-                                borderRadius: 4,
-                                barPercentage: 0.5
-                            }]
+                            labels: [],
+                            datasets: [{ data: [], backgroundColor: '#FFDBAC', borderRadius: 4, barPercentage: 0.6 }]
                         },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            animation: {
-                                duration: 1500,
-                                easing: 'easeInOutCubic'
-                            },
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, barLabels: {} },
                             scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    grid: { color: 'rgba(255,255,255,0.03)' },
-                                    ticks: { color: '#888', font: { family: 'Times New Roman' } },
-                                    border: { display: false }
-                                },
-                                x: {
-                                    grid: { display: false },
-                                    ticks: { color: '#aaa', font: { family: 'Times New Roman', size: 11 } },
-                                    border: { display: false }
-                                }
+                                y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                                x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 } } }
                             },
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    backgroundColor: 'rgba(20, 20, 25, 0.9)',
-                                    titleColor: '#ffdbac',
-                                    bodyColor: '#fff',
-                                    bodyFont: { family: 'Times New Roman' },
-                                    borderColor: 'rgba(255, 219, 172, 0.3)',
-                                    borderWidth: 1,
-                                    displayColors: false,
-                                    padding: 10
+                            onClick: (e, elements) => {
+                                if (elements.length > 0) {
+                                    const idx = elements[0].index;
+                                    const { start } = getPeriodRange();
+                                    const d = new Date(start);
+                                    d.setDate(d.getDate() + idx);
+
+                                    // Toggle logic
+                                    if (selectedDay.value && selectedDay.value.getTime() === d.getTime()) {
+                                        selectedDay.value = null; // Deselect
+                                    } else {
+                                        selectedDay.value = d;
+                                    }
+                                    updateCharts();
+                                } else {
+                                    // Clicking outside bars deselects?
+                                    selectedDay.value = null;
+                                    updateCharts();
                                 }
                             }
                         }
                     });
+
+                    // Donut
+                    const ctxD = document.getElementById('donutChart').getContext('2d');
+                    donutChart = new Chart(ctxD, {
+                        type: 'doughnut',
+                        data: {
+                            labels: [],
+                            datasets: [{ data: [], backgroundColor: [], borderWidth: 0, cutout: '85%' }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false } }
+                        }
+                    });
                 };
 
-                const importUser = () => {
-                    const inputId = prompt("Enter your previous User ID to sync data:", userId.value);
-                    if (inputId && inputId !== userId.value) {
-                        if (confirm("Switch user? Current local data will be replaced.")) {
-                            localStorage.setItem('qa_user_id', inputId);
-                            window.location.reload();
+                // Fetch
+                const fetchLogs = async () => {
+                    const userId = localStorage.getItem('qa_user_id');
+                    if (!userId) {
+                        const local = localStorage.getItem('timer_logs');
+                        if (local) logs.value = JSON.parse(local);
+                        return;
+                    }
+
+                    // Firebase Compat Get
+                    try {
+                        const snapshot = await db.ref(`users/${userId}/logs`).once('value');
+                        if (snapshot.exists()) {
+                            logs.value = Object.values(snapshot.val());
                         }
+                    } catch (e) {
+                        console.error("Fetch Error", e);
+                        // Fallback local?
                     }
                 };
 
-                onMounted(() => {
-                    initUser();
+                // Watch
+                watch([viewMode, currentDate], () => updateCharts());
+
+                // Refs
+                const totalTimeDisplay = ref('--');
+                const averageTimeDisplay = ref('--');
+                const donutLabel = ref('Total');
+                const donutValue = ref('--');
+                const tagRanking = ref([]);
+
+                onMounted(async () => {
+                    initCharts();
+                    await fetchLogs();
+                    updateCharts();
                 });
 
-                return { userId, formattedTotalTime, chartPeriod, hasNoLogs, renderChart, importUser, calendarDays, currentMonthLabel, changeMonth };
+                return {
+                    viewMode, setViewMode, navLabel, shiftPeriod,
+                    totalTimeDisplay, averageTimeDisplay,
+                    donutLabel, donutValue, tagRanking
+                };
             }
         }).mount('#app');
     </script>
