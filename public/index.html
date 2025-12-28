@@ -1330,7 +1330,7 @@
             <div class="lights-layer">
                 <div v-for="(isOn, index) in windows" :key="index" class="light" :class="['w-' + index, { 
                 'is-active': isOn && index !== myRoomIndex, 
-                'is-dev-room': index === 14 && isOn,
+                'is-dev-room': index === 14 && isOn && index !== myRoomIndex,
                 'is-resting': isResting && index === myRoomIndex
             }]"></div>
             </div>
@@ -1780,7 +1780,7 @@
                     }
 
                     // Save Log
-                    if (time.value > 5 && userId.value) { // Only save > 5 sec (changed from 60 for testing)
+                    if (time.value >= 5 && userId.value) { // Only save >= 5 sec (changed from 60 for testing)
                         const log = {
                             start: sessionStartTime.value ? sessionStartTime.value.toISOString() : new Date().toISOString(),
                             duration: time.value,
@@ -1925,8 +1925,10 @@
                                 // Check staleness (timeout 5 mins)
                                 const now = Date.now();
                                 if (now - room.lastActive < 300000) {
-                                    arr[idx] = true;
-                                    if (idx !== myRoomIndex.value) count++;
+                                    if (idx !== myRoomIndex.value) {
+                                        arr[idx] = true;
+                                        count++;
+                                    }
                                 }
                             }
                         }
