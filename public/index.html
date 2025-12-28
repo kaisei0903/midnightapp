@@ -1273,6 +1273,8 @@
             box-shadow: 0 6px 15px rgba(255, 219, 172, 0.1);
         }
 
+
+
         .pause-tags .add-tag-btn {
             grid-column: span 2;
             /* Full width for 'Add' */
@@ -1362,45 +1364,69 @@
                     <p class="fade-in">タグを選択して終了</p>
                     <div class="pause-tags">
                         <button v-for="tag in tags" :key="tag" @click="finishSession(tag)">{{ tag }}</button>
-                        <button class="add-tag-btn" @click="showTagSettings = true">+</button>
+                        <button class="add-tag-btn" @click="showSettings = true">+</button>
                     </div>
                 </div>
             </div>
         </transition>
 
-        <!-- Tag Settings Modal -->
-        <transition name="fade">
-            <div class="modal-overlay" v-if="showTagSettings" @click.self="showTagSettings = false">
-                <div class="modal-content tag-modal">
-                    <div class="modal-header"><span>Manage Tags</span><span class="modal-close"
-                            @click="showTagSettings = false">✕</span></div>
-                    <div class="tag-list">
-                        <div v-for="(tag, index) in tags" :key="index" class="tag-item"><span>{{ tag }}</span><button
-                                class="delete-tag-btn" @click="deleteTag(index)">✕</button></div>
-                    </div>
-                    <div class="add-tag-row"><input type="text" placeholder="New Tag"
-                            @keyup.enter="addTag($event.target.value); $event.target.value=''" /></div>
-                </div>
-            </div>
-        </transition>
+
 
         <transition name="fade">
             <div class="modal-overlay" v-if="showSettings" @click.self="saveSettings">
                 <div class="modal-content">
-                    <div class="modal-header"><span>Focus Settings</span><span class="modal-close"
-                            @click="saveSettings">✕</span></div>
-                    <div class="setting-row"><span>Mode</span>
-                        <div class="setting-radio-group"><label class="setting-radio-label"
-                                :class="{ active: settings.mode === 'timer' }"><input type="radio" value="timer"
-                                    v-model="settings.mode">Timer </label><label class="setting-radio-label"
-                                :class="{ active: settings.mode === 'stopwatch' }"><input type="radio" value="stopwatch"
-                                    v-model="settings.mode">Stopwatch </label></div>
+                    <div class="modal-header"><span>設定</span><span class="modal-close" @click="saveSettings">✕</span>
                     </div>
-                    <div class="setting-row" v-if="settings.mode === 'timer'"><span>Focus Time
-                            (min)</span><input type="number" v-model.number="settings.pomodoro" class="setting-input"
-                            min="1" max="120"></div>
-                    <div class="setting-row"><span>Break Time (min)</span><input type="number"
-                            v-model.number="settings.rest" class="setting-input" min="1" max="60"></div>
+                    <div class="setting-row" v-if="settings.mode === 'timer'"><span>集中時間 (分)</span><input type="number"
+                            v-model.number="settings.pomodoro" class="setting-input" min="1" max="120"></div>
+
+
+                    <!-- Tag Management (Embedded) -->
+                    <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                        <div style="margin-bottom:10px; font-size:14px; color:#aaa;">タグ管理</div>
+                        <div class="tag-list" style="max-height: 120px; margin-bottom: 10px;">
+                            <div v-for="(tag, index) in tags" :key="index" class="tag-item"
+                                style="padding: 6px 10px; font-size: 13px;">
+                                <span>{{ tag }}</span>
+                                <button class="delete-tag-btn" @click="deleteTag(index)"
+                                    style="font-size: 14px;">✕</button>
+                            </div>
+                        </div>
+                        <div class="add-tag-row">
+                            <input type="text" placeholder="新しいタグ"
+                                @keyup.enter="addTag($event.target.value); $event.target.value=''"
+                                style="padding: 8px; font-size: 13px;">
+                        </div>
+                    </div>
+
+                    <!-- Data Transfer (ID Based) -->
+                    <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                        <div style="margin-bottom:10px; font-size:14px; color:#aaa;">データ引継ぎ</div>
+
+                        <!-- Current ID -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">現在のID (コピー)</div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" :value="userId" readonly class="setting-input"
+                                    style="flex: 1; font-size: 11px; color: #fff; background: rgba(255,255,255,0.05); width: auto;"
+                                    @click="copyText(userId)">
+                                <button class="primary" style="padding: 4px 10px; font-size: 12px; min-width: 60px;"
+                                    @click="copyText(userId)">コピー</button>
+                            </div>
+                        </div>
+
+                        <!-- Import ID -->
+                        <div>
+                            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">IDを入力してデータを復元</div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" v-model="importUserId" placeholder="移行元のIDを入力" class="setting-input"
+                                    style="flex: 1; font-size: 11px; text-align: left; padding-left: 8px; width: auto; color: #fff;">
+                                <button class="primary" style="padding: 4px 10px; font-size: 12px; min-width: 60px;"
+                                    @click="updateUserId">更新</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="text-align: right; margin-top: 20px;"><button class="primary" @click="saveSettings">SAVE
                             & CLOSE</button></div>
                 </div>
@@ -1432,7 +1458,14 @@
                     <path d="M12 14v-4"></path>
                     <path d="M4 13a8 8 0 0 1 8-7 8 8 0 1 1-8 7"></path>
                 </svg></div>
-            <!-- Settings Button Removed per user request -->
+            <div class="icon-circle-btn" @click="showSettings = true" title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+            </div>
         </div>
 
         <!-- Timer Area Moved Inside Game Container -->
@@ -1457,431 +1490,497 @@
                 <!-- Bottom Action Row -->
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <!-- Start/Stop Button --><button class="primary" @click="handleMainButton">
-                        {{ isResting ? '休憩終了': (isPaused ? '再開' : (isRunning ? 'ストップ' : 'スタート')) }}
+                        {{ isResting ? '休憩終了': (isPaused ? '再開' : (isRunning ? '停止' : '開始')) }}
                     </button>
-                    <!-- Note Icon (Integrated) -->
-                    <div class="icon-note" @click="showTagSettings = true" title="Manage Tags">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px; color: #ddd;">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <line x1="10" y1="9" x2="8" y2="9"></line>
-                        </svg>
-                    </div>
+                    <!-- Note Icon moved to corner -->
                 </div>
             </div>
+
         </div>
-        <!-- "Midnight Console" Stats Overlay REMOVED (Moved to stats.html) -->
-        <!-- Global Builds for Local Execution -->
-        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-        <script>
-            // --- Shared Logic Inlined (formerly shared.js) ---
-            const firebaseConfig = {
-                apiKey: "AIzaSyApsAaSIFEh1BhRgl_sFPssLMOPLjnOqaE",
-                authDomain: "late-light.firebaseapp.com",
-                databaseURL: "https://late-light-default-rtdb.firebaseio.com",
-                projectId: "late-light",
-                storageBucket: "late-light.firebasestorage.app",
-                messagingSenderId: "785315819458",
-                appId: "1:785315819458:web:feda9dc1fb93f497f6b05b",
-                measurementId: "G-C4HKZB6L22"
-            };
+    </div>
+    <!-- "Midnight Console" Stats Overlay REMOVED (Moved to stats.html) -->
+    <!-- Global Builds for Local Execution -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-            // Initialize Firebase (Compat)
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.database();
+    <script>
+        // --- Shared Logic Inlined (formerly shared.js) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyApsAaSIFEh1BhRgl_sFPssLMOPLjnOqaE",
+            authDomain: "late-light.firebaseapp.com",
+            databaseURL: "https://late-light-default-rtdb.firebaseio.com",
+            projectId: "late-light",
+            storageBucket: "late-light.firebasestorage.app",
+            messagingSenderId: "785315819458",
+            appId: "1:785315819458:web:feda9dc1fb93f497f6b05b",
+            measurementId: "G-C4HKZB6L22"
+        };
 
-            // Helper: Format Seconds
-            const formatTimeStr = (s) => {
-                const h = Math.floor(s / 3600);
-                const m = Math.floor((s % 3600) / 60);
-                const sec = s % 60;
-                if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-                return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-            };
+        // Initialize Firebase (Compat)
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-            const getWeekKey = (d) => {
-                const s = new Date(d.getFullYear(), 0, 1);
-                const w = Math.ceil((((d - s) / 86400000) + s.getDay() + 1) / 7);
-                return d.getFullYear() + '-' + w;
-            };
+        // Helper: Format Seconds
+        const formatTimeStr = (s) => {
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+            return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+        };
 
-            // --- Main App Logic ---
-            const { createApp, ref, computed, onMounted, watch } = Vue;
+        const getWeekKey = (d) => {
+            const s = new Date(d.getFullYear(), 0, 1);
+            const w = Math.ceil((((d - s) / 86400000) + s.getDay() + 1) / 7);
+            return d.getFullYear() + '-' + w;
+        };
 
-            createApp({
-                setup() {
-                    const userId = ref('');
-                    const totalSeconds = ref(0);
-                    const isDev = ref(false);
-                    const isSaved = ref(true);
-                    const DEV_ROOM_INDEX = 14;
-                    const sessionStartTime = ref(null);
+        // --- Main App Logic ---
+        const { createApp, ref, computed, onMounted, watch } = Vue;
 
-                    // UI States
-                    const currentTab = ref('room');
-                    const showSettings = ref(false);
-                    const showTagSettings = ref(false);
-                    const isPaused = ref(false);
+        createApp({
+            setup() {
+                const userId = ref('');
+                const totalSeconds = ref(0);
+                const isDev = ref(false);
+                const isSaved = ref(true);
+                const DEV_ROOM_INDEX = 14;
+                const sessionStartTime = ref(null);
 
-                    // Default Tags
-                    const tags = ref(JSON.parse(localStorage.getItem('qa_tags') || '["Study", "Work", "Reading", "Code"]'));
+                // UI States
+                const currentTab = ref('room');
+                const showSettings = ref(false);
+                const importUserId = ref('');
+                const isPaused = ref(false);
 
-                    // Toasts
-                    const toasts = ref([]);
-                    let toastId = 0;
+                // Default Tags
+                const tags = ref(JSON.parse(localStorage.getItem('qa_tags') || '[]'));
 
-                    const showToast = (text) => {
-                        const id = toastId++;
-                        toasts.value.push({ id, text });
-                        setTimeout(() => {
-                            toasts.value = toasts.value.filter(t => t.id !== id);
-                        }, 4000);
-                    };
+                // Toasts
+                const toasts = ref([]);
+                let toastId = 0;
 
-                    // Settings
-                    const savedSettings = JSON.parse(localStorage.getItem('qa_settings') || '{"pomodoro": 25, "rest": 5, "mode": "stopwatch"}');
-                    if (!savedSettings.mode || savedSettings.mode === 'pomodoro' || savedSettings.mode === 'timer') {
-                        savedSettings.mode = 'stopwatch';
+                const showToast = (text) => {
+                    const id = toastId++;
+                    toasts.value.push({ id, text });
+                    setTimeout(() => {
+                        toasts.value = toasts.value.filter(t => t.id !== id);
+                    }, 4000);
+                };
+
+                // Settings
+                const savedSettings = JSON.parse(localStorage.getItem('qa_settings') || '{"pomodoro": 25, "rest": 5, "mode": "stopwatch"}');
+                if (!savedSettings.mode || savedSettings.mode === 'pomodoro' || savedSettings.mode === 'timer') {
+                    savedSettings.mode = 'stopwatch';
+                }
+
+                // Audio Context
+                let alarmCtx = null;
+                let alarmIntervalId = null;
+
+                const playAlarm = () => {
+                    if (alarmCtx) return;
+                    try {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        if (AudioContext) {
+                            alarmCtx = new AudioContext();
+                            const beep = () => {
+                                if (!alarmCtx) return;
+                                const osc = alarmCtx.createOscillator();
+                                const gain = alarmCtx.createGain();
+                                osc.connect(gain);
+                                gain.connect(alarmCtx.destination);
+                                osc.type = 'sine';
+                                osc.frequency.setValueAtTime(880, alarmCtx.currentTime);
+                                gain.gain.setValueAtTime(0.05, alarmCtx.currentTime);
+                                gain.gain.exponentialRampToValueAtTime(0.001, alarmCtx.currentTime + 0.5);
+                                osc.start(alarmCtx.currentTime);
+                                osc.stop(alarmCtx.currentTime + 0.5);
+                            };
+                            beep();
+                            alarmIntervalId = setInterval(beep, 1500);
+                        }
+                    } catch (e) {
+                        console.error("Audio access blocked", e);
+                    }
+                };
+
+                const stopAlarm = () => {
+                    if (alarmIntervalId) clearInterval(alarmIntervalId);
+                    alarmIntervalId = null;
+                    if (alarmCtx) {
+                        try { alarmCtx.close(); } catch (e) { }
+                        alarmCtx = null;
+                    }
+                };
+
+                const settings = ref(savedSettings);
+
+                const toggleMode = () => {
+                    if (mode.value === 'pomodoro') {
+                        settings.value.mode = 'stopwatch';
+                        mode.value = 'countup';
+                    } else {
+                        settings.value.mode = 'timer';
+                        mode.value = 'pomodoro';
+                    }
+                    localStorage.setItem('qa_settings', JSON.stringify(settings.value));
+                    if (!isRunning.value && !isResting.value) resetTimer();
+                };
+
+                const saveSettings = () => {
+                    localStorage.setItem('qa_settings', JSON.stringify(settings.value));
+                    showSettings.value = false;
+                    mode.value = settings.value.mode === 'stopwatch' ? 'countup' : 'pomodoro';
+                    showToast('Settings saved.');
+                    if (!isRunning.value && !isResting.value) resetTimer();
+                };
+
+                const saveTags = () => localStorage.setItem('qa_tags', JSON.stringify(tags.value));
+                const addTag = (name) => {
+                    if (name && !tags.value.includes(name)) {
+                        tags.value.push(name);
+                        saveTags();
+                    }
+                };
+                const deleteTag = (index) => {
+                    tags.value.splice(index, 1);
+                    saveTags();
+                };
+
+                const TIMER_PRESETS = [25, 50, 60, 90];
+                const cycleTimerDuration = () => {
+                    if (mode.value !== 'pomodoro') return;
+                    const currentMin = Math.floor((settings.value.focusTimeSeconds || (settings.value.pomodoro * 60)) / 60);
+                    let nextIndex = TIMER_PRESETS.findIndex(p => p > currentMin);
+                    if (nextIndex === -1) nextIndex = 0;
+                    const nextMin = TIMER_PRESETS[nextIndex];
+                    const nextSec = nextMin * 60;
+                    settings.value.focusTimeSeconds = nextSec;
+                    settings.value.pomodoro = nextMin;
+                    localStorage.setItem('qa_settings', JSON.stringify(settings.value));
+                    if (!isRunning.value && !isResting.value) time.value = 0;
+                };
+
+                const FOCUS_TIME = computed(() => settings.value.focusTimeSeconds || (settings.value.pomodoro * 60));
+                const toggleScreen = () => { window.location.href = 'stats.html'; };
+
+                const isClockMode = ref(true);
+                watch(isClockMode, (newVal) => {
+                    const appEl = document.getElementById('app');
+                    if (newVal) appEl.classList.add('clock-mode');
+                    else appEl.classList.remove('clock-mode');
+                }, { immediate: true });
+
+                const windows = ref(new Array(30).fill(false));
+                const isRunning = ref(false);
+                const isResting = ref(false);
+                const time = ref(0);
+                const timerInterval = ref(null);
+                const heartbeatInterval = ref(null);
+                const mode = ref(settings.value.mode === 'stopwatch' ? 'countup' : 'pomodoro');
+                const myRoomIndex = ref(null); // Ref for my room
+                const activeNeighbors = ref(0); // Ref for active neighbors
+
+                // Time Display
+                const formattedTime = computed(() => {
+                    if (mode.value === 'countup') {
+                        return formatTimeStr(time.value);
+                    } else {
+                        const remaining = Math.max(0, FOCUS_TIME.value - time.value);
+                        return formatTimeStr(remaining);
+                    }
+                });
+
+                const formattedTotalTime = computed(() => formatTimeStr(totalSeconds.value));
+
+                // --- Core Logic ---
+                const startTimer = () => {
+                    if (isRunning.value) return;
+
+                    // Reset if session was stale
+                    if (time.value === 0) {
+                        sessionStartTime.value = new Date();
                     }
 
-                    // Audio Context
-                    let alarmCtx = null;
-                    let alarmIntervalId = null;
+                    isRunning.value = true;
+                    isPaused.value = false;
+                    isSaved.value = false;
 
-                    const playAlarm = () => {
-                        if (alarmCtx) return;
+                    // Light ON
+                    if (myRoomIndex.value !== null) {
                         try {
-                            const AudioContext = window.AudioContext || window.webkitAudioContext;
-                            if (AudioContext) {
-                                alarmCtx = new AudioContext();
-                                const beep = () => {
-                                    if (!alarmCtx) return;
-                                    const osc = alarmCtx.createOscillator();
-                                    const gain = alarmCtx.createGain();
-                                    osc.connect(gain);
-                                    gain.connect(alarmCtx.destination);
-                                    osc.type = 'sine';
-                                    osc.frequency.setValueAtTime(880, alarmCtx.currentTime);
-                                    gain.gain.setValueAtTime(0.05, alarmCtx.currentTime);
-                                    gain.gain.exponentialRampToValueAtTime(0.001, alarmCtx.currentTime + 0.5);
-                                    osc.start(alarmCtx.currentTime);
-                                    osc.stop(alarmCtx.currentTime + 0.5);
-                                };
-                                beep();
-                                alarmIntervalId = setInterval(beep, 1500);
-                            }
-                        } catch (e) {
-                            console.error("Audio access blocked", e);
+                            const userStatusRef = db.ref(`rooms/${myRoomIndex.value}`);
+                            userStatusRef.update({
+                                active: true,
+                                lastActive: firebase.database.ServerValue.TIMESTAMP
+                            });
+                        } catch (e) { console.error(e); }
+                    }
+
+                    timerInterval.value = setInterval(() => {
+                        time.value++;
+                        totalSeconds.value++;
+
+                        // Timer Mode Finish
+                        if (mode.value === 'pomodoro' && time.value >= FOCUS_TIME.value) {
+                            finishSession();
                         }
-                    };
+                    }, 1000);
 
-                    const stopAlarm = () => {
-                        if (alarmIntervalId) clearInterval(alarmIntervalId);
-                        alarmIntervalId = null;
-                        if (alarmCtx) {
-                            try { alarmCtx.close(); } catch (e) { }
-                            alarmCtx = null;
-                        }
-                    };
-
-                    const settings = ref(savedSettings);
-
-                    const toggleMode = () => {
-                        if (mode.value === 'pomodoro') {
-                            settings.value.mode = 'stopwatch';
-                            mode.value = 'countup';
-                        } else {
-                            settings.value.mode = 'timer';
-                            mode.value = 'pomodoro';
-                        }
-                        localStorage.setItem('qa_settings', JSON.stringify(settings.value));
-                        if (!isRunning.value && !isResting.value) resetTimer();
-                    };
-
-                    const saveSettings = () => {
-                        localStorage.setItem('qa_settings', JSON.stringify(settings.value));
-                        showSettings.value = false;
-                        mode.value = settings.value.mode === 'stopwatch' ? 'countup' : 'pomodoro';
-                        showToast('Settings saved.');
-                        if (!isRunning.value && !isResting.value) resetTimer();
-                    };
-
-                    const saveTags = () => localStorage.setItem('qa_tags', JSON.stringify(tags.value));
-                    const addTag = (name) => {
-                        if (name && !tags.value.includes(name)) {
-                            tags.value.push(name);
-                            saveTags();
-                        }
-                    };
-                    const deleteTag = (index) => {
-                        tags.value.splice(index, 1);
-                        saveTags();
-                    };
-
-                    const TIMER_PRESETS = [25, 50, 60, 90];
-                    const cycleTimerDuration = () => {
-                        if (mode.value !== 'pomodoro') return;
-                        const currentMin = Math.floor((settings.value.focusTimeSeconds || (settings.value.pomodoro * 60)) / 60);
-                        let nextIndex = TIMER_PRESETS.findIndex(p => p > currentMin);
-                        if (nextIndex === -1) nextIndex = 0;
-                        const nextMin = TIMER_PRESETS[nextIndex];
-                        const nextSec = nextMin * 60;
-                        settings.value.focusTimeSeconds = nextSec;
-                        settings.value.pomodoro = nextMin;
-                        localStorage.setItem('qa_settings', JSON.stringify(settings.value));
-                        if (!isRunning.value && !isResting.value) time.value = 0;
-                    };
-
-                    const FOCUS_TIME = computed(() => settings.value.focusTimeSeconds || (settings.value.pomodoro * 60));
-                    const toggleScreen = () => { window.location.href = 'stats.html'; };
-
-                    const isClockMode = ref(true);
-                    watch(isClockMode, (newVal) => {
-                        const appEl = document.getElementById('app');
-                        if (newVal) appEl.classList.add('clock-mode');
-                        else appEl.classList.remove('clock-mode');
-                    }, { immediate: true });
-
-                    const windows = ref(new Array(30).fill(false));
-                    const isRunning = ref(false);
-                    const isResting = ref(false);
-                    const time = ref(0);
-                    const timerInterval = ref(null);
-                    const heartbeatInterval = ref(null);
-                    const mode = ref(settings.value.mode === 'stopwatch' ? 'countup' : 'pomodoro');
-                    const myRoomIndex = ref(null); // Ref for my room
-                    const activeNeighbors = ref(0); // Ref for active neighbors
-
-                    // Time Display
-                    const formattedTime = computed(() => {
-                        if (mode.value === 'countup') {
-                            return formatTimeStr(time.value);
-                        } else {
-                            const remaining = Math.max(0, FOCUS_TIME.value - time.value);
-                            return formatTimeStr(remaining);
-                        }
-                    });
-
-                    const formattedTotalTime = computed(() => formatTimeStr(totalSeconds.value));
-
-                    // --- Core Logic ---
-                    const startTimer = () => {
-                        if (isRunning.value) return;
-
-                        // Reset if session was stale
-                        if (time.value === 0) {
-                            sessionStartTime.value = new Date();
-                        }
-
-                        isRunning.value = true;
-                        isPaused.value = false;
-                        isSaved.value = false;
-
-                        // Light ON
-                        if (myRoomIndex.value !== null) {
-                            try {
-                                const userStatusRef = db.ref(`rooms/${myRoomIndex.value}`);
-                                userStatusRef.update({
-                                    active: true,
+                    // Heartbeat (every 1 min)
+                    const beat = () => {
+                        if (userId.value) {
+                            const today = new Date().toISOString().split('T')[0];
+                            // Simple daily update to keep alive? Or just rely on disconnect
+                            // Actually we need to update "rooms" status to prevent stale
+                            if (myRoomIndex.value !== null) {
+                                db.ref(`rooms/${myRoomIndex.value}`).update({
                                     lastActive: firebase.database.ServerValue.TIMESTAMP
                                 });
-                            } catch (e) { console.error(e); }
+                            }
                         }
+                    };
+                    heartbeatInterval.value = setInterval(beat, 60000);
+                };
 
-                        timerInterval.value = setInterval(() => {
-                            time.value++;
-                            totalSeconds.value++;
+                const pauseTimer = () => {
+                    clearInterval(timerInterval.value);
+                    clearInterval(heartbeatInterval.value);
+                    isRunning.value = false;
+                    isPaused.value = true;
+                    // Note: Light stays visible locally? Usually turned off in DB to show inactive?
+                    // Let's turn off DB light to show "not focused" to neighbors
+                    if (myRoomIndex.value !== null) {
+                        db.ref(`rooms/${myRoomIndex.value}`).update({ active: false });
+                    }
+                };
 
-                            // Timer Mode Finish
-                            if (mode.value === 'pomodoro' && time.value >= FOCUS_TIME.value) {
-                                finishSession();
-                            }
-                        }, 1000);
+                const resumeTimer = () => {
+                    startTimer();
+                };
 
-                        // Heartbeat (every 1 min)
-                        const beat = () => {
-                            if (userId.value) {
-                                const today = new Date().toISOString().split('T')[0];
-                                // Simple daily update to keep alive? Or just rely on disconnect
-                                // Actually we need to update "rooms" status to prevent stale
-                                if (myRoomIndex.value !== null) {
-                                    db.ref(`rooms/${myRoomIndex.value}`).update({
-                                        lastActive: firebase.database.ServerValue.TIMESTAMP
-                                    });
-                                }
-                            }
+                const finishSession = (tag = null) => {
+                    stopAlarm();
+                    clearInterval(timerInterval.value);
+                    clearInterval(heartbeatInterval.value);
+                    isRunning.value = false;
+                    isPaused.value = false;
+                    isResting.value = false;
+
+                    // Light OFF
+                    if (myRoomIndex.value !== null) {
+                        db.ref(`rooms/${myRoomIndex.value}`).update({ active: false });
+                    }
+
+                    // Save Log
+                    if (time.value > 5 && userId.value) { // Only save > 5 sec (changed from 60 for testing)
+                        const log = {
+                            start: sessionStartTime.value ? sessionStartTime.value.toISOString() : new Date().toISOString(),
+                            duration: time.value,
+                            mode: mode.value,
+                            tag: tag || 'Focus'
                         };
-                        heartbeatInterval.value = setInterval(beat, 60000);
-                    };
-
-                    const pauseTimer = () => {
-                        clearInterval(timerInterval.value);
-                        clearInterval(heartbeatInterval.value);
-                        isRunning.value = false;
-                        isPaused.value = true;
-                        // Note: Light stays visible locally? Usually turned off in DB to show inactive?
-                        // Let's turn off DB light to show "not focused" to neighbors
-                        if (myRoomIndex.value !== null) {
-                            db.ref(`rooms/${myRoomIndex.value}`).update({ active: false });
-                        }
-                    };
-
-                    const resumeTimer = () => {
-                        startTimer();
-                    };
-
-                    const finishSession = (tag = null) => {
-                        stopAlarm();
-                        clearInterval(timerInterval.value);
-                        clearInterval(heartbeatInterval.value);
-                        isRunning.value = false;
-                        isPaused.value = false;
-                        isResting.value = false;
-
-                        // Light OFF
-                        if (myRoomIndex.value !== null) {
-                            db.ref(`rooms/${myRoomIndex.value}`).update({ active: false });
-                        }
-
-                        // Save Log
-                        if (time.value > 5 && userId.value) { // Only save > 5 sec (changed from 60 for testing)
-                            const log = {
-                                start: sessionStartTime.value ? sessionStartTime.value.toISOString() : new Date().toISOString(),
-                                duration: time.value,
-                                mode: mode.value,
-                                tag: tag || 'Focus'
-                            };
-                            db.ref(`users/${userId.value}/logs`).push(log);
-                            isSaved.value = true;
-                            showToast(`Session Saved: ${tag || 'Focus'} (${formatTimeStr(time.value)})`);
-                        }
-
-                        // Reset
-                        time.value = 0;
-                        sessionStartTime.value = null;
-
-                        // If Timer Mode -> Start Rest?
-                        if (mode.value === 'pomodoro' && !tag) { // Automatic finish (no tag selected yet)
-                            // Actually in this app, we ask for tag on pause/finish manually. 
-                            // If time runs out, maybe just go to rest?
-                            // Let's keep it simple: Just stop. User can start rest manually if implemented.
-                            // Wait, previous code had "Rest" logic.
-                            startRest();
-                        }
-                    };
-
-                    const startRest = () => {
-                        isResting.value = true;
-                        if (settings.value.rest > 0) {
-                            // Simple rest timer?
-                            // For now just state isResting (UI changes blue-green)
-                            // Maybe auto-start a rest timer? 
-                            // Implementation simplified for resilience:
-                            playAlarm(); // Ring when time is up
-                            setTimeout(stopAlarm, 3000);
-                        }
-                    };
-
-                    const handleMainButton = () => {
-                        if (isResting.value) {
-                            // End Rest
-                            isResting.value = false;
-                            time.value = 0;
-                            stopAlarm();
-                        } else if (isPaused.value) {
-                            resumeTimer();
-                        } else if (isRunning.value) {
-                            pauseTimer();
-                        } else {
-                            startTimer();
-                        }
-                    };
-
-                    const resetTimer = () => {
-                        pauseTimer();
-                        isPaused.value = false; // Hide pause menu
-                        time.value = 0;
+                        db.ref(`users/${userId.value}/logs`).push(log);
                         isSaved.value = true;
-                    };
+                        showToast(`Session Saved: ${tag || 'Focus'} (${formatTimeStr(time.value)})`);
+                    }
 
-                    // Initialize
-                    onMounted(() => {
-                        // Auth / User ID
-                        let uid = localStorage.getItem('qa_user_id');
+                    // Reset
+                    time.value = 0;
+                    sessionStartTime.value = null;
+
+                    // If Timer Mode -> Start Rest?
+                    if (mode.value === 'pomodoro' && !tag) { // Automatic finish (no tag selected yet)
+                        // Actually in this app, we ask for tag on pause/finish manually. 
+                        // If time runs out, maybe just go to rest?
+                        // Let's keep it simple: Just stop. User can start rest manually if implemented.
+                        // Wait, previous code had "Rest" logic.
+                        startRest();
+                    }
+                };
+
+                const startRest = () => {
+                    isResting.value = true;
+                    if (settings.value.rest > 0) {
+                        // Simple rest timer?
+                        // For now just state isResting (UI changes blue-green)
+                        // Maybe auto-start a rest timer? 
+                        // Implementation simplified for resilience:
+                        playAlarm(); // Ring when time is up
+                        setTimeout(stopAlarm, 3000);
+                    }
+                };
+
+                const handleMainButton = () => {
+                    if (isResting.value) {
+                        // End Rest
+                        isResting.value = false;
+                        time.value = 0;
+                        stopAlarm();
+                    } else if (isPaused.value) {
+                        resumeTimer();
+                    } else if (isRunning.value) {
+                        pauseTimer();
+                    } else {
+                        startTimer();
+                    }
+                };
+
+                const resetTimer = () => {
+                    pauseTimer();
+                    isPaused.value = false; // Hide pause menu
+                    time.value = 0;
+                    isSaved.value = true;
+                };
+
+                // Data Transfer Logic
+                const copyText = (text) => {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            showToast('コピーしました');
+                        }).catch(() => {
+                            fallbackCopy(text);
+                        });
+                    } else {
+                        fallbackCopy(text);
+                    }
+                };
+
+                const updateUserId = () => {
+                    const newId = importUserId.value.trim();
+                    if (newId && newId !== userId.value) {
+                        if (confirm(`ID: ${newId} にデータを切り替えますか？\n(現在の画面はリロードされます)`)) {
+                            localStorage.setItem('qa_user_id', newId);
+                            location.reload();
+                        }
+                    }
+                };
+
+                const fallbackCopy = (text) => {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showToast('コピーしました');
+                    } catch (err) {
+                        showToast('コピーに失敗しました');
+                    }
+                    document.body.removeChild(textArea);
+                };
+
+                // Initialize
+                onMounted(() => {
+                    // Auth / User ID
+                    const urlParams = new URLSearchParams(window.location.search);
+                    let uid = urlParams.get('uid');
+
+                    if (uid) {
+                        // Override with URL param
+                        localStorage.setItem('qa_user_id', uid);
+                    } else {
+                        // Fallback to stored or generate
+                        uid = localStorage.getItem('qa_user_id');
                         if (!uid) {
                             uid = 'u_' + Math.random().toString(36).substr(2, 9);
                             localStorage.setItem('qa_user_id', uid);
                         }
-                        userId.value = uid;
+                    }
+                    userId.value = uid;
 
-                        // Dev Mode
-                        if (window.location.hash === '#dev') {
-                            isDev.value = true;
-                            setTimeout(() => showToast('Developer Mode Active'), 1000);
-                        }
+                    // Dev Mode
+                    if (window.location.hash === '#dev') {
+                        isDev.value = true;
+                        setTimeout(() => showToast('Developer Mode Active'), 1000);
+                    }
 
-                        // Room Allocation
-                        // Try to find a free room or use existing
-                        let savedRoom = localStorage.getItem('qa_room_index');
-                        if (savedRoom) {
-                            myRoomIndex.value = parseInt(savedRoom);
-                        } else {
-                            // Random allocation for now
-                            const r = Math.floor(Math.random() * 24); // 0-23 typical windows
-                            myRoomIndex.value = r;
-                            localStorage.setItem('qa_room_index', r);
-                        }
+                    // Room Allocation
+                    // Try to find a free room or use existing
+                    let savedRoom = localStorage.getItem('qa_room_index');
+                    if (savedRoom) {
+                        myRoomIndex.value = parseInt(savedRoom);
+                    } else {
+                        // Random allocation for now
+                        const r = Math.floor(Math.random() * 24); // 0-23 typical windows
+                        myRoomIndex.value = r;
+                        localStorage.setItem('qa_room_index', r);
+                    }
 
-                        // Listen to Rooms
-                        db.ref('rooms').on('value', (snap) => {
-                            const val = snap.val() || {};
-                            const arr = new Array(30).fill(false);
-                            let count = 0;
-                            for (const [key, room] of Object.entries(val)) {
-                                const idx = parseInt(key);
-                                if (room.active) {
-                                    // Check staleness (timeout 5 mins)
-                                    const now = Date.now();
-                                    if (now - room.lastActive < 300000) {
-                                        arr[idx] = true;
-                                        if (idx !== myRoomIndex.value) count++;
-                                    }
+                    // Listen to Rooms
+                    db.ref('rooms').on('value', (snap) => {
+                        const val = snap.val() || {};
+                        const arr = new Array(30).fill(false);
+                        let count = 0;
+                        for (const [key, room] of Object.entries(val)) {
+                            const idx = parseInt(key);
+                            if (room.active) {
+                                // Check staleness (timeout 5 mins)
+                                const now = Date.now();
+                                if (now - room.lastActive < 300000) {
+                                    arr[idx] = true;
+                                    if (idx !== myRoomIndex.value) count++;
                                 }
                             }
-                            windows.value = arr;
-                            activeNeighbors.value = count;
-                        });
-
-                        // Setup disconnect handler
-                        if (myRoomIndex.value !== null) {
-                            const roomRef = db.ref(`rooms/${myRoomIndex.value}`);
-                            roomRef.onDisconnect().update({ active: false });
                         }
+                        windows.value = arr;
+                        activeNeighbors.value = count;
                     });
 
-                    return {
-                        // State
-                        time, totalSeconds, isRunning, isPaused, isResting, isSaved,
-                        mode, settings, tags, showSettings, showTagSettings, isClockMode,
-                        windows, activeNeighbors, toasts, currentTab, myRoomIndex,
-                        // Computed
-                        formattedTime, formattedTotalTime,
-                        // methods
-                        startTimer, pauseTimer, resumeTimer, resetTimer, finishSession,
-                        handleMainButton,
-                        cycleTimerDuration,
-                        saveSettings, toggleMode, toggleScreen,
-                        addTag, deleteTag
-                    };
-                }
-            }).mount('#app');
-        </script>
+                    // Setup disconnect handler
+                    if (myRoomIndex.value !== null) {
+                        const roomRef = db.ref(`rooms/${myRoomIndex.value}`);
+                        roomRef.onDisconnect().update({ active: false });
+                    }
+                });
+
+                return {
+                    userId,
+                    totalSeconds,
+                    isDev,
+                    isSaved,
+                    activeNeighbors,
+
+                    // State
+                    currentTab,
+                    showSettings,
+                    importUserId,
+                    isPaused,
+                    tags,
+                    toasts,
+                    windows,
+
+                    // Timer
+                    isRunning,
+                    isResting,
+                    time,
+                    mode,
+                    isClockMode,
+
+                    // Computed
+                    settings,
+                    formattedTime,
+                    formattedTotalTime,
+
+                    // Methods
+                    saveSettings,
+                    addTag,
+                    deleteTag,
+                    toggleScreen,
+                    toggleMode,
+                    handleMainButton,
+                    resetTimer,
+                    cycleTimerDuration,
+                    finishSession,
+                    copyText,
+                    updateUserId
+                };
+            }
+        }).mount('#app');
+    </script>
 </body>
 
 </html>

@@ -171,6 +171,8 @@
                 min-height: 0;
                 overflow-y: auto;
                 height: 100%;
+                display: flex;
+                flex-direction: column;
             }
         }
 
@@ -369,8 +371,7 @@
             .main-content {
                 display: grid;
                 /* Override base flex */
-                grid-template-columns: 1fr 280px;
-                grid-template-rows: 1fr;
+                grid-template-columns: 5fr 3fr;
                 padding-bottom: 15px;
                 overflow: hidden;
             }
@@ -380,7 +381,7 @@
             .main-content {
                 display: grid;
                 /* Override base flex */
-                grid-template-columns: 1fr 240px;
+                grid-template-columns: 5fr 3fr;
                 gap: 8px;
                 padding: 0 10px 10px;
             }
@@ -441,12 +442,12 @@
 
         /* Donut & Summary Area */
         .donut-wrapper {
-            /* Handled by generic rule above, but ensures aspect ratio doesn't break flex */
             position: relative;
             width: 100%;
-            /* max-width removed to let it stretch but chart.js maintains aspect ratio usually */
-            flex: 1;
-            min-height: 0;
+            height: 220px;
+            /* Fixed height to prevent resizing */
+            flex-shrink: 0;
+            /* Don't shrink */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -485,6 +486,13 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            flex: 1;
+            /* Take remaining space */
+            overflow-y: auto;
+            /* Scroll if too many tags */
+            min-height: 0;
+            padding-right: 4px;
+            /* Space for scrollbar */
         }
 
         .tag-row {
@@ -819,7 +827,8 @@
                         const key = curr.toDateString();
                         daysMap.set(key, 0);
                         if (viewMode.value === 'week') {
-                            labels.push(curr.toLocaleDateString('ja-JP', { weekday: 'short' }));
+                            const dateStr = `${curr.getMonth() + 1}/${curr.getDate()}`;
+                            labels.push([curr.toLocaleDateString('ja-JP', { weekday: 'short' }), dateStr]);
                         } else {
                             labels.push(curr.getDate());
                         }
@@ -997,6 +1006,9 @@
                                     selectedDay.value = null;
                                     updateCharts();
                                 }
+                            },
+                            tooltip: {
+                                enabled: false
                             }
                         }
                     });
