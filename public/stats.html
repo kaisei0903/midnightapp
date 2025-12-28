@@ -20,6 +20,10 @@
             --safe-bottom: env(safe-area-inset-bottom);
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -33,34 +37,77 @@
             flex-direction: column;
         }
 
-        /* Ambient Background */
-        body::before {
-            content: '';
+        /* Ambient Background - Replaced by Image */
+        /* body::before removed or kept as overlay? Let's keep it above img if needed, but img is better main bg */
+
+        .stats-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 50% 10%, rgba(255, 219, 172, 0.08), transparent 60%);
-            z-index: -2;
+            object-fit: cover;
+            z-index: -5;
+            filter: blur(15px) brightness(0.4);
+            transform: scale(1.1);
+            /* Avoid white edges from blur */
             pointer-events: none;
         }
 
-        /* --- Header: Back & Tabs --- */
-        .top-bar {
-            padding: calc(10px + var(--safe-top)) 20px 10px;
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
+        /* --- Header v2 --- */
+        .top-header {
+            padding: calc(10px + var(--safe-top)) 20px 5px;
+            display: flex;
+            justify-content: center;
             align-items: center;
+            position: relative;
+            min-height: 80px;
+            /* Ensure space for absolute button if needed, or just let it float */
+        }
+
+        .total-display {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .total-display .label {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .total-display .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .tab-row {
+            display: flex;
+            justify-content: center;
+            padding-bottom: 5px;
         }
 
         .back-btn {
+            position: fixed;
+            top: max(30px, env(safe-area-inset-top));
+            left: max(30px, env(safe-area-inset-left));
+            z-index: 100;
             color: var(--text-dim);
             text-decoration: none;
-            font-size: 15px;
             display: flex;
             align-items: center;
-            gap: 5px;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+
+        .back-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text);
         }
 
         .tab-group {
@@ -92,17 +139,20 @@
         .main-content {
             flex: 1;
             overflow-y: auto;
-            padding: 0 20px 0;
+            padding: 0 20px 20px;
             /* Full height usage */
             display: grid;
             gap: 20px;
-            /* Mobile Default: Stacked (Bar top for timeline focus? Or Donut? User said Donut Left, Bar Right usually implies Sidebar/Main) */
-            /* User Request: "Donut Left, Bar Right" */
+            /* Mobile Default: Stacked */
             grid-template-columns: 1fr;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
         }
 
         /* Desktop: Side by Side - Swapped: Main(Bar) Left, Side(Donut) Right */
-        @media (min-width: 768px) {
+        /* Increased breakpoint to 1024px to ensure mobile landscape stays stacked */
+        @media (min-width: 1024px) {
             .main-content {
                 grid-template-columns: 1fr 300px;
                 /* Bar(Wide) | Donut(Fixed) */
@@ -118,6 +168,8 @@
             flex-direction: column;
             gap: 20px;
             min-height: 0;
+            /* Prevent Grid Blowout */
+            min-width: 0;
             overflow-y: auto;
         }
 
@@ -126,6 +178,8 @@
             flex-direction: column;
             gap: 20px;
             min-height: 0;
+            /* Prevent Grid Blowout */
+            min-width: 0;
         }
 
         /* Date Nav */
@@ -163,6 +217,8 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
+            /* Ensure it doesn't exceed parent */
+            max-width: 100%;
         }
 
         /* Main Chart */
@@ -225,9 +281,36 @@
         }
 
         .tag-dot {
-            width: 8px;
             height: 8px;
             border-radius: 50%;
+        }
+
+        /* New Grand Total Banner */
+        .total-banner {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 10px;
+            padding-bottom: 10px;
+        }
+
+        .total-banner .label {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .total-banner .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* Chart Titles */
+        .chart-title {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
         }
 
         [v-cloak] {
@@ -238,39 +321,49 @@
 
 <body>
     <div id="app" v-cloak>
-        <!-- Header -->
-        <div class="top-bar">
+        <!-- Background Image -->
+        <img src="bg-portrait.jpg" class="stats-bg">
+
+        <!-- Header Row 1: Back & Grand Total -->
+        <div class="top-header">
             <a href="index.html" class="back-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                    <path d="M15 18l-6-6 6-6" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
-                Room
             </a>
-            <div class="tab-group">
-                <button class="tab-btn" :class="{ active: viewMode === 'week' }"
-                    @click="setViewMode('week')">Week</button>
-                <button class="tab-btn" :class="{ active: viewMode === 'month' }"
-                    @click="setViewMode('month')">Month</button>
+            <!-- Grand Total Here -->
+            <div class="total-display">
+                <span class="label">累計:</span>
+                <span class="value">{{ grandTotalDisplay }}</span>
             </div>
-            <div style="width: 20px;"></div>
         </div>
 
-        <!-- Navigator: Centered below tabs -->
+        <!-- Header Row 2: Tabs -->
+        <div class="tab-row">
+            <div class="tab-group">
+                <button class="tab-btn" :class="{ active: viewMode === 'week' }" @click="setViewMode('week')">週</button>
+                <button class="tab-btn" :class="{ active: viewMode === 'month' }"
+                    @click="setViewMode('month')">月</button>
+            </div>
+        </div>
+
+        <!-- Navigator -->
         <div class="date-nav">
             <button class="nav-arrow" @click="shiftPeriod(-1)">‹</button>
             <div class="nav-label">{{ navLabel }}</div>
             <button class="nav-arrow" @click="shiftPeriod(1)">›</button>
         </div>
 
+        <!-- (Old Banner Removed) -->
+
         <div class="main-content">
             <!-- 1. Main Panel (Bar Chart) - Now on Left -->
             <div class="main-panel">
                 <div class="card" style="flex: 1;">
+                    <h3 class="chart-title">推移</h3>
                     <div class="chart-container-large">
                         <canvas id="mainChart"></canvas>
-                    </div>
-                    <div class="info-text" v-if="viewMode==='week'">
-                        *Target Line (2h)
                     </div>
                 </div>
             </div>
@@ -278,16 +371,7 @@
             <!-- 2. Side Panel (Donut & Summary) - Now on Right -->
             <div class="side-panel">
                 <div class="card" style="flex: 1;">
-                    <div class="summary-stats">
-                        <div class="stat-item">
-                            <div class="label">Total</div>
-                            <div class="value">{{ totalTimeDisplay }}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="label">Daily Avg</div>
-                            <div class="value">{{ averageTimeDisplay }}</div>
-                        </div>
-                    </div>
+                    <h3 class="chart-title">内訳</h3>
 
                     <div class="donut-wrapper">
                         <canvas id="donutChart"></canvas>
@@ -360,7 +444,19 @@
                     meta.data.forEach((element, index) => {
                         const val = dataset.data[index];
                         if (val === 0) return; // Skip 0
-                        const label = Math.round(val * 10) / 10 + 'h';
+
+                        // Convert float hours to H:M
+                        const totalMin = Math.round(val * 60);
+                        const h = Math.floor(totalMin / 60);
+                        const m = totalMin % 60;
+
+                        let label = '';
+                        if (h > 0) {
+                            label = `${h}時間${m}分`;
+                        } else {
+                            label = `${m}分`;
+                        }
+
                         ctx.save();
                         ctx.fillStyle = '#ffffff';
                         ctx.font = 'bold 11px sans-serif';
@@ -376,31 +472,13 @@
         const horizontalLinePlugin = {
             id: 'horizontalLine',
             afterDraw(chart, args, options) {
-                if (!options.yValue && options.yValue !== 0) return;
-                const { ctx, chartArea: { left, right }, scales: { y } } = chart;
-                const yPixel = y.getPixelForValue(options.yValue);
-                if (yPixel < 0 || yPixel > chart.height) return;
-                ctx.save();
-                ctx.beginPath();
-                ctx.strokeStyle = options.color || '#ffffff';
-                ctx.lineWidth = 1;
-                if (options.dashed) ctx.setLineDash([4, 4]);
-                ctx.moveTo(left, yPixel);
-                ctx.lineTo(right, yPixel);
-                ctx.stroke();
-                if (options.label) {
-                    ctx.fillStyle = options.color || '#ffffff';
-                    ctx.font = '10px sans-serif';
-                    ctx.textAlign = 'right';
-                    ctx.fillText(options.label, right, yPixel - 4);
-                }
-                ctx.restore();
+                // Removed
             }
         };
 
         // Ensure Chart is defined (loaded from CDN in head)
         if (typeof Chart !== 'undefined') {
-            Chart.register(barLabelPlugin, horizontalLinePlugin);
+            Chart.register(barLabelPlugin);
         }
 
         createApp({
@@ -419,14 +497,20 @@
                     const y = d.getFullYear();
                     const m = d.getMonth() + 1;
                     if (viewMode.value === 'week') {
-                        // Week calculation
+                        // Calculate week range
                         const dCopy = new Date(d);
-                        dCopy.setDate(1);
-                        const dayOfWeek = dCopy.getDay(); // 0(Sun)..6(Sat)
-                        // Align to Mon start (1)
-                        const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-                        const weekNum = Math.ceil((d.getDate() + offset) / 7);
-                        return `${y}年${m}月 第${weekNum}週`;
+                        const day = dCopy.getDay();
+                        const diff = dCopy.getDate() - day + (day === 0 ? -6 : 1); // Mon start
+                        const start = new Date(dCopy.setDate(diff));
+                        const end = new Date(start);
+                        end.setDate(start.getDate() + 6);
+
+                        const sM = start.getMonth() + 1;
+                        const sD = start.getDate();
+                        const eM = end.getMonth() + 1;
+                        const eD = end.getDate();
+
+                        return `${y}年 ${sM}/${sD} ~ ${eM}/${eD}`;
                     } else {
                         return `${y}年 ${m}月`;
                     }
@@ -437,6 +521,14 @@
                     viewMode.value = m;
                     selectedDay.value = null;
                     updateCharts();
+                };
+
+                // Consistent formatting helper
+                const formatDuration = (valSeconds) => {
+                    const h = Math.floor(valSeconds / 3600);
+                    const m = Math.floor((valSeconds % 3600) / 60);
+                    if (h > 0) return `${h}時間${m}分`;
+                    return `${m}分`;
                 };
 
                 const shiftPeriod = (delta) => {
@@ -478,6 +570,14 @@
 
                 const updateCharts = () => {
                     if (!mainChart || !donutChart) return;
+
+                    // 0. Calculate Grand Total (Lifetime)
+                    if (logs.value) {
+                        const allLogs = logs.value;
+                        let grandTotalSec = 0;
+                        allLogs.forEach(l => grandTotalSec += l.duration);
+                        grandTotalDisplay.value = formatDuration(grandTotalSec);
+                    }
 
                     const periodLogs = filterLogs();
                     const { start, end } = getPeriodRange();
@@ -527,19 +627,42 @@
 
                     mainChart.data.labels = labels;
                     mainChart.data.datasets[0].data = data;
+                    mainChart.data.datasets[0].data = data;
                     mainChart.data.datasets[0].backgroundColor = bgColors;
 
+                    // Calculate dynamic step size for Y-axis (Nice Time Steps)
+                    const maxVal = Math.max(...data, 0);
+                    // Define nice steps in minutes: 1, 2, 5, 10, 15, 20, 30, 60 (1h), 120 (2h)...
+                    let stepSizeDesc = 1 / 60; // Default 1 min
+
+                    if (maxVal > 0) {
+                        const maxMin = maxVal * 60;
+                        const targetSteps = 5; // Aim for ~5 lines
+                        const rawStepMin = maxMin / targetSteps;
+
+                        const niceSteps = [1, 2, 5, 10, 15, 20, 30, 60];
+                        // Find closest nice step or just use large hour multiples
+                        let bestStepMin = 60;
+
+                        if (rawStepMin <= 60) {
+                            bestStepMin = niceSteps.find(s => s >= rawStepMin) || 60;
+                        } else {
+                            // multiples of hours
+                            bestStepMin = Math.ceil(rawStepMin / 60) * 60;
+                        }
+                        stepSizeDesc = bestStepMin / 60;
+                    }
+
+                    mainChart.options.scales.y.ticks.stepSize = stepSizeDesc;
+                    // Force start at 0
+                    mainChart.options.scales.y.beginAtZero = true;
+
                     // Plugin options
-                    const avg = totalVal / data.length;
+                    // Removed Avg and Period Total calculation for UI (as requested to be removed)
+                    // The chart labels/data are already set above.
                     if (viewMode.value === 'week') {
-                        mainChart.options.plugins.horizontalLine = {
-                            yValue: 2, color: 'rgba(255,255,255,0.5)', dashed: true, label: 'Goal'
-                        };
                         mainChart.options.scales.x.ticks.callback = (val, i) => labels[i];
                     } else {
-                        mainChart.options.plugins.horizontalLine = {
-                            yValue: avg, color: 'rgba(50,205,50,0.8)', dashed: false, label: 'Avg'
-                        };
                         mainChart.options.scales.x.ticks.callback = (val, i) => {
                             const d = i + 1;
                             return (d === 1 || d % 5 === 0) ? d : '';
@@ -550,14 +673,9 @@
                     // 2. Update Donut
                     updateDonut(periodLogs);
 
-                    // 3. Stats
-                    const h = Math.floor(totalVal);
-                    const m = Math.round((totalVal - h) * 60);
-                    totalTimeDisplay.value = `${h}h ${m}m`;
-
-                    const avgH = Math.floor(avg);
-                    const avgM = Math.round((avg - avgH) * 60);
-                    averageTimeDisplay.value = `${avgH}h ${avgM}m`;
+                    // 3. Stats - Recalculate from raw seconds for consistency
+                    // Removed Avg and Period Total calculation for UI (as requested to be removed)
+                    // The chart labels/data are already set above.
                 };
 
                 const updateDonut = (periodLogs) => {
@@ -571,7 +689,7 @@
                         });
                         donutLabel.value = selectedDay.value.getDate() + '日';
                     } else {
-                        donutLabel.value = 'Total';
+                        donutLabel.value = '合計';
                     }
 
                     const tagMap = {};
@@ -585,16 +703,17 @@
                     const sorted = Object.entries(tagMap).sort((a, b) => b[1] - a[1]);
                     const donutData = sorted.map(s => s[1] / 60);
                     const donutLabels = sorted.map(s => s[0]);
-                    const colors = ['#FFDBAC', '#00FFFF', '#FF00FF', '#FFFF00', '#AAAAAA'];
+                    const colors = ['#FFDBAC', '#8DA399', '#9B8DA3', '#A3948D', '#7A7A7A'];
 
                     donutChart.data.labels = donutLabels;
                     donutChart.data.datasets[0].data = donutData;
                     donutChart.data.datasets[0].backgroundColor = colors;
                     donutChart.update();
 
-                    const h = Math.floor(sum / 3600);
-                    const m = Math.floor((sum % 3600) / 60);
-                    donutValue.value = h > 0 ? `${h}h${m}m` : `${m}m`;
+                    donutChart.data.datasets[0].backgroundColor = colors;
+                    donutChart.update();
+
+                    donutValue.value = formatDuration(sum);
 
                     tagRanking.value = sorted.map((s, i) => ({
                         name: s[0],
@@ -616,7 +735,22 @@
                             responsive: true, maintainAspectRatio: false,
                             plugins: { legend: { display: false }, barLabels: {} },
                             scales: {
-                                y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                                y: {
+                                    display: true,
+                                    grid: { color: 'rgba(255,255,255,0.05)' },
+                                    ticks: {
+                                        color: '#888',
+                                        callback: (val) => {
+                                            if (val === 0) return '0分';
+                                            const totalMin = Math.round(val * 60);
+                                            const h = Math.floor(totalMin / 60);
+                                            const m = totalMin % 60;
+                                            if (h > 0 && m > 0) return `${h}時間${m}分`;
+                                            if (h > 0) return `${h}時間`;
+                                            return `${m}分`;
+                                        }
+                                    }
+                                },
                                 x: { grid: { display: false }, ticks: { color: '#888', font: { size: 11 } } }
                             },
                             onClick: (e, elements) => {
@@ -680,13 +814,14 @@
 
                 // Watch
                 watch([viewMode, currentDate], () => updateCharts());
+                watch(logs, () => updateCharts(), { deep: true }); // Ensure updates when logs load
 
                 // Refs
-                const totalTimeDisplay = ref('--');
-                const averageTimeDisplay = ref('--');
-                const donutLabel = ref('Total');
-                const donutValue = ref('--');
+                const currentPeriodLogs = ref([]); // Store for usage if needed
+                const donutValue = ref('');
+                const donutLabel = ref('');
                 const tagRanking = ref([]);
+                const grandTotalDisplay = ref('');
 
                 onMounted(async () => {
                     initCharts();
@@ -696,8 +831,8 @@
 
                 return {
                     viewMode, setViewMode, navLabel, shiftPeriod,
-                    totalTimeDisplay, averageTimeDisplay,
-                    donutLabel, donutValue, tagRanking
+                    donutLabel, donutValue, tagRanking,
+                    grandTotalDisplay
                 };
             }
         }).mount('#app');

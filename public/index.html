@@ -287,10 +287,14 @@
 
             z-index: 1;
             /* Content layer */
+            /* Content layer */
             z-index: 1;
             /* Content layer */
             cursor: default;
             /* Reset cursor */
+
+            /* Enable Container Queries */
+            container-type: inline-size;
         }
 
         /* Dev Recording Mode Cursor */
@@ -325,7 +329,8 @@
 
         /* 1. Timer Centered */
         .timer-centered {
-            position: fixed;
+            position: absolute;
+            /* Changed from fixed to absolute (relative to game-container) */
             top: 50%;
             /* Dead center */
             left: 50%;
@@ -394,8 +399,9 @@
         }
 
         .timer-display {
-            /* Responsive but capped font size */
-            font-size: clamp(32px, 8vw, 64px);
+            /* Responsive but capped font size, using cqw relative to game-container */
+            font-size: 12cqw;
+            /* Adjusted for container relative sizing */
             font-family: 'Courier New', monospace;
             /* Monospaced to prevent jitter */
             font-weight: bold;
@@ -1325,6 +1331,24 @@
                 'is-resting': isResting && index === myRoomIndex
             }]"></div>
             </div>
+
+            <!-- Timer Area (Moved Inside Game Container for Scaling) -->
+            <div class="timer-centered"
+                :class="{ 'focus-mode': isRunning, 'rest-mode': isResting, 'room-view': !isClockMode, 'paused-move-up': isPaused }"
+                v-show="currentTab === 'room'">
+                <div class="info-group">
+                    <div class="neighbor-count">
+                        <div class="live-dot"></div>{{ activeNeighbors }} 人が集中
+                    </div>
+                    <div class="total-time">合計: {{ formattedTotalTime }}
+                        <span class="save-status" :class="{ 'saved': isSaved }">●</span>
+                    </div>
+                </div>
+                <!-- Timer Display -->
+                <div class="timer-display" @click="cycleTimerDuration" :class="{ 'clickable': mode === 'pomodoro' }">
+                    {{ formattedTime }}
+                </div>
+            </div>
         </div>
         <!-- End of game-container -->
 
@@ -1410,22 +1434,7 @@
             <!-- Settings Button Removed per user request -->
         </div>
 
-        <!-- Timer Area (Centered or Bottom) -->
-        <div class="timer-centered"
-            :class="{ 'focus-mode': isRunning, 'rest-mode': isResting, 'room-view': !isClockMode, 'paused-move-up': isPaused }"
-            v-show="currentTab === 'room'">
-            <div class="info-group">
-                <div class="neighbor-count">
-                    <div class="live-dot"></div>{{ activeNeighbors }} 人が集中
-                </div>
-                <div class="total-time">合計: {{ formattedTotalTime }}
-                    <span class="save-status" :class="{ 'saved': isSaved }">●</span>
-                </div>
-            </div>
-            <div class="timer-display" @click="cycleTimerDuration" :class="{ 'clickable': mode === 'pomodoro' }">
-                {{ formattedTime }}
-            </div>
-        </div>
+        <!-- Timer Area Moved Inside Game Container -->
 
         <div class="controls-bottom" v-show="currentTab === 'room'">
             <!-- Note Icon Removed (Moved into .controls) -->
