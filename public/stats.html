@@ -34,29 +34,22 @@
             color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
-            overflow: hidden;
-            height: 100vh;
-            /* Fallback */
+        }
+
+        #app {
+            height: 100dvh;
+            /* Dynamic Viewport Height */
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            /* Prevent body scroll */
+            position: relative;
+            z-index: 1;
+            /* Sit above the background image */
         }
 
-        /* Ambient Background - Replaced by Image */
+        /* Ambient Background - Defined later */
         /* body::before removed or kept as overlay? Let's keep it above img if needed, but img is better main bg */
-
-        .stats-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: -5;
-            filter: blur(15px) brightness(0.4);
-            transform: scale(1.1);
-            /* Avoid white edges from blur */
-            pointer-events: none;
-        }
 
         /* --- Header v2 --- */
         .top-header {
@@ -180,13 +173,15 @@
         /* Small Landscape Tweak */
         @media (orientation: landscape) and (max-width: 900px) {
             .main-content {
-                grid-template-columns: 1fr 240px;
+                grid-template-columns: 1fr 240px !important;
+                /* Force side-by-side */
+                flex-direction: row !important;
                 gap: 10px;
                 padding: 0 10px 10px;
             }
         }
 
-        /* Ambient Background */
+        /* Ambient Background - Z-Index 0 to sit above body black but below app */
         .stats-bg {
             position: fixed;
             top: 0;
@@ -194,8 +189,9 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            z-index: -5;
-            filter: blur(15px) brightness(0.4);
+            z-index: 0;
+            filter: blur(15px) brightness(0.6);
+            /* Increased brightness */
             transform: scale(1.1);
             pointer-events: none;
         }
@@ -203,14 +199,35 @@
         /* --- Header v2 --- */
         .top-header {
             padding: calc(5px + var(--safe-top)) 20px 5px;
-            /* Reduced top pad */
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
-            min-height: 60px;
-            /* Reduced min-height */
+            min-height: 50px;
+            /* Further reduced */
             flex-shrink: 0;
+        }
+
+        /* Enforce Chart resizing */
+        .chart-container-large,
+        .donut-wrapper {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            /* Removed height: 100% constraint to let flex work naturally */
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            /* Flex center to hold chart */
+            align-items: center;
+            justify-content: center;
+        }
+
+        #mainChart {
+            /* Revert to default or responsive sizing */
+            width: 100% !important;
+            height: 100% !important;
+            /* No absolute positioning */
         }
 
         .total-display {
@@ -285,24 +302,38 @@
         }
 
         /* --- Layout Grid --- */
+        /* --- Layout Grid --- */
         .main-content {
             flex: 1;
             padding: 0 10px 10px;
             /* Tighter padding */
-            display: grid;
+            display: flex;
+            /* Switch to Flexbox for vertical stack */
+            flex-direction: column;
             gap: 10px;
             /* Tighter gap */
-            grid-template-columns: 1fr;
-            grid-template-rows: 1.2fr 1fr;
             max-width: 1200px;
             width: 100%;
             margin: 0 auto;
             overflow: hidden;
+            /* Prevent Main Scroll */
             min-height: 0;
+        }
+
+        /* Adjust flex ratios for portrait */
+        .main-content>.main-panel {
+            flex: 1.2;
+            /* Bar chart gets slightly more space */
+        }
+
+        .main-content>.side-panel {
+            flex: 1;
         }
 
         @media (orientation: landscape) and (min-height: 350px) {
             .main-content {
+                display: grid;
+                /* Override base flex */
                 grid-template-columns: 1fr 280px;
                 grid-template-rows: 1fr;
                 padding-bottom: 15px;
@@ -312,6 +343,8 @@
 
         @media (orientation: landscape) and (max-width: 900px) {
             .main-content {
+                display: grid;
+                /* Override base flex */
                 grid-template-columns: 1fr 240px;
                 gap: 8px;
                 padding: 0 10px 10px;
@@ -373,11 +406,20 @@
 
         /* Donut & Summary Area */
         .donut-wrapper {
+            /* Handled by generic rule above, but ensures aspect ratio doesn't break flex */
             position: relative;
             width: 100%;
-            max-width: 180px;
-            margin: 0 auto 15px;
-            aspect-ratio: 1;
+            /* max-width removed to let it stretch but chart.js maintains aspect ratio usually */
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #donutChart {
+            max-height: 100%;
+            max-width: 100%;
         }
 
         .summary-stats {
@@ -388,6 +430,8 @@
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            /* Keep stats fixed size */
         }
 
         .stat-item .label {
