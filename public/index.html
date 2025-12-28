@@ -1364,7 +1364,7 @@
                     <p class="fade-in">タグを選択して終了</p>
                     <div class="pause-tags">
                         <button v-for="tag in tags" :key="tag" @click="finishSession(tag)">{{ tag }}</button>
-                        <button class="add-tag-btn" @click="showSettings = true">+</button>
+                        <button class="add-tag-btn" @click="isTagEditMode = true; showSettings = true">+</button>
                     </div>
                 </div>
             </div>
@@ -1375,10 +1375,12 @@
         <transition name="fade">
             <div class="modal-overlay" v-if="showSettings" @click.self="saveSettings">
                 <div class="modal-content">
-                    <div class="modal-header"><span>設定</span><span class="modal-close" @click="saveSettings">✕</span>
+                    <div class="modal-header"><span>{{ isTagEditMode ? 'タグ管理' : '設定' }}</span><span class="modal-close"
+                            @click="saveSettings">✕</span>
                     </div>
-                    <div class="setting-row" v-if="settings.mode === 'timer'"><span>集中時間 (分)</span><input type="number"
-                            v-model.number="settings.pomodoro" class="setting-input" min="1" max="120"></div>
+                    <div class="setting-row" v-if="!isTagEditMode && settings.mode === 'timer'"><span>集中時間
+                            (分)</span><input type="number" v-model.number="settings.pomodoro" class="setting-input"
+                            min="1" max="120"></div>
 
 
                     <!-- Tag Management (Embedded) -->
@@ -1399,9 +1401,10 @@
                         </div>
                     </div>
 
-                    <!-- Data Transfer (ID Based) -->
-                    <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                        <div style="margin-bottom:10px; font-size:14px; color:#aaa;">データ引継ぎ</div>
+                    <!-- Data Transfer (ID Based) - Hidden in Tag Edit Mode -->
+                    <div v-if="!isTagEditMode"
+                        style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                        <div style="margin-bottom:10px; font-size:14px; color:#aaa;">データ引き継ぎ (ID)</div>
 
                         <!-- Current ID -->
                         <div style="margin-bottom: 12px;">
@@ -1458,7 +1461,7 @@
                     <path d="M12 14v-4"></path>
                     <path d="M4 13a8 8 0 0 1 8-7 8 8 0 1 1-8 7"></path>
                 </svg></div>
-            <div class="icon-circle-btn" @click="showSettings = true" title="Settings">
+            <div class="icon-circle-btn" @click="isTagEditMode = false; showSettings = true" title="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path
@@ -1552,6 +1555,7 @@
                 // UI States
                 const currentTab = ref('room');
                 const showSettings = ref(false);
+                const isTagEditMode = ref(false);
                 const importUserId = ref('');
                 const isPaused = ref(false);
 
@@ -1941,8 +1945,10 @@
                     userId,
                     totalSeconds,
                     isDev,
+                    isTagEditMode,
                     isSaved,
                     activeNeighbors,
+                    myRoomIndex,
 
                     // State
                     currentTab,
