@@ -185,7 +185,7 @@
             }
         }
 
-        /* Ambient Background - Layer 1: Raw Image (Z -2) */
+        /* Ambient Background - Z-Index 0 */
         .stats-bg {
             position: fixed;
             top: 0;
@@ -193,21 +193,23 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            z-index: -2;
-            /* No filter on image to avoid rendering bugs */
+            z-index: 0;
+            /* Raw image at base level */
             transform: scale(1.1);
             pointer-events: none;
         }
 
-        /* Ambient Background - Layer 2: Frosted Overlay (Z -1) */
+        /* Ambient Background - Overlay (Z 0, typically renders after if same z-index, or use 0 and make image -1 relative to a stacking context? 
+           Safest: BG=0, App=1. Overlay=0 (after BG). */
         .stats-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
-            /* Frosted glass effect here */
+            z-index: 0;
+            /* Sit on top of image (DOM order usually handles this if z-index is same, but let's be explicit if needed. 
+               Actually, if both are 0, DOM order wins. Overlay is after Image in HTML. Perfect.) */
             backdrop-filter: blur(15px) brightness(0.6);
             -webkit-backdrop-filter: blur(15px) brightness(0.6);
             background: rgba(0, 0, 0, 0.2);
@@ -222,20 +224,18 @@
             align-items: center;
             position: relative;
             min-height: 50px;
-            /* Further reduced */
             flex-shrink: 0;
         }
 
-        /* App Content */
+        /* App Content - Z-Index 1 to sit above background */
         #app {
             height: 100dvh;
-            /* Dynamic Viewport Height */
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            /* Prevent body scroll */
             position: relative;
-            /* z-index removed */
+            z-index: 1;
+            /* Restore positive Z-index */
         }
 
         /* Enforce Chart resizing */
@@ -503,6 +503,8 @@
 
         .tag-dot {
             height: 8px;
+            width: 8px;
+            /* Added width */
             border-radius: 50%;
         }
 
