@@ -544,6 +544,100 @@
             color: var(--text);
         }
 
+        /* Modal / Settings */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 11000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-surface);
+            border: 1px solid var(--ui-border);
+            border-radius: 20px;
+            padding: 25px;
+            width: 85%;
+            max-width: 320px;
+            box-shadow: var(--shadow-soft);
+            color: var(--text);
+            backdrop-filter: var(--glass-blur);
+        }
+
+        .modal-header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            cursor: pointer;
+            opacity: 0.6;
+            font-size: 20px;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .setting-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 8px;
+            padding: 4px 8px;
+            width: 60px;
+            text-align: center;
+        }
+
+        .add-tag-row {
+            margin-top: 10px;
+        }
+
+        /* Reusing .primary, .back-btn styles */
+
+        .settings-btn {
+            position: fixed;
+            top: max(20px, env(safe-area-inset-top));
+            right: max(20px, env(safe-area-inset-right));
+            z-index: 100;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text);
+        }
+
         [v-cloak] {
             display: none;
         }
@@ -557,6 +651,66 @@
     <div class="stats-overlay"></div>
 
     <div id="app" v-cloak>
+        <!-- Modal Overlay -->
+        <transition name="fade">
+            <div class="modal-overlay" v-if="showSettings" @click.self="saveSettings">
+                <div class="modal-content">
+                    <div class="modal-header"><span>{{ isTagEditMode ? 'タグ管理' : '設定' }}</span><span class="modal-close"
+                            @click="saveSettings">✕</span>
+                    </div>
+
+                    <!-- Tag Management (Embedded) -->
+                    <div style="margin-top: 0px; padding-top: 0px;">
+                        <div style="margin-bottom:10px; font-size:14px; color:#aaa;">タグ管理</div>
+                        <div class="tag-list" style="max-height: 120px; margin-bottom: 10px;">
+                            <div v-for="(tag, index) in tags" :key="index" class="tag-row"
+                                style="padding: 6px 10px; font-size: 13px;">
+                                <span>{{ tag }}</span>
+                                <button class="delete-tag-btn" @click="deleteTag(index)"
+                                    style="font-size: 14px; padding: 2px 8px;">✕</button>
+                            </div>
+                        </div>
+                        <div class="add-tag-row">
+                            <input type="text" placeholder="新しいタグ" v-model="newTagInput"
+                                @keyup.enter="addTag(newTagInput)" style="padding: 8px; font-size: 13px;"
+                                class="setting-input" style="width: 100%; text-align: left;">
+                        </div>
+                    </div>
+
+                    <!-- Data Transfer (ID Based) -->
+                    <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                        <div style="margin-bottom:10px; font-size:14px; color:#aaa;">データ引き継ぎ (ID)</div>
+
+                        <!-- Current ID -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">現在のID (コピー)</div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" :value="userId" readonly class="setting-input"
+                                    style="flex: 1; font-size: 11px; color: #fff; background: rgba(255,255,255,0.05); width: auto; text-align:left;"
+                                    @click="copyText(userId)">
+                                <button class="primary" style="padding: 4px 10px; font-size: 12px; min-width: 60px;"
+                                    @click="copyText(userId)">コピー</button>
+                            </div>
+                        </div>
+
+                        <!-- Import ID -->
+                        <div>
+                            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">IDを入力してデータを復元</div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" v-model="importUserId" placeholder="移行元のIDを入力" class="setting-input"
+                                    style="flex: 1; font-size: 11px; text-align: left; padding-left: 8px; width: auto; color: #fff;">
+                                <button class="primary" style="padding: 4px 10px; font-size: 12px; min-width: 60px;"
+                                    @click="updateUserId">更新</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right; margin-top: 20px;"><button class="primary"
+                            @click="saveSettings">保存</button></div>
+                </div>
+            </div>
+        </transition>
+
         <!-- Header Row 1: Back & Grand Total -->
         <div class="top-header">
             <a href="index.html" class="back-btn">
@@ -565,6 +719,17 @@
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
             </a>
+
+            <!-- Settings Button -->
+            <div class="settings-btn" @click="showSettings = true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+            </div>
+
             <!-- Grand Total Here -->
             <div class="total-display">
                 <span class="label">累計:</span>
@@ -1060,7 +1225,72 @@
                 const tagRanking = ref([]);
                 const grandTotalDisplay = ref('');
 
+                // --- Settings Logic ---
+                const showSettings = ref(false);
+                const isTagEditMode = ref(false);
+                const tags = ref(['Focus', 'Reading', 'Coding', 'Meeting']);
+                const newTagInput = ref('');
+                const userId = ref(localStorage.getItem('qa_userId') || 'user_' + Math.floor(Math.random() * 100000));
+                const importUserId = ref('');
+
+                // Methods for Settings
+                const saveSettings = () => {
+                    if (newTagInput.value && newTagInput.value.trim().length > 0) {
+                        addTag(newTagInput.value);
+                    }
+                    showSettings.value = false;
+                };
+
+                const saveTags = () => localStorage.setItem('qa_tags', JSON.stringify(tags.value));
+
+                const addTag = (name) => {
+                    const trimmed = name.trim();
+                    if (trimmed && !tags.value.includes(trimmed)) {
+                        tags.value.push(trimmed);
+                        saveTags();
+                    }
+                    newTagInput.value = '';
+                };
+
+                const deleteTag = (index) => {
+                    tags.value.splice(index, 1);
+                    saveTags();
+                };
+
+                const copyText = (text) => {
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('IDをコピーしました');
+                    });
+                };
+
+                const updateUserId = () => {
+                    if (importUserId.value && importUserId.value.trim().length > 0) {
+                        const newId = importUserId.value.trim();
+                        if (confirm('IDを変更すると現在のデータが上書きされる可能性があります。よろしいですか？')) {
+                            localStorage.setItem('qa_userId', newId);
+                            userId.value = newId;
+                            importUserId.value = '';
+                            alert('IDを更新しました。ページをリロードしてデータを読み込みます。');
+                            location.reload();
+                        }
+                    }
+                };
+
                 onMounted(async () => {
+                    // Load Tags
+                    const savedTags = localStorage.getItem('qa_tags');
+                    if (savedTags) {
+                        try {
+                            tags.value = JSON.parse(savedTags);
+                        } catch (e) { console.error('Error parsing tags', e); }
+                    }
+
+                    // Load User (ensure consistent with Index)
+                    const storedId = localStorage.getItem('qa_userId');
+                    if (storedId) {
+                        userId.value = storedId;
+                    }
+
                     initCharts();
                     await fetchLogs();
                     updateCharts();
@@ -1069,7 +1299,10 @@
                 return {
                     viewMode, setViewMode, navLabel, shiftPeriod,
                     donutLabel, donutValue, tagRanking,
-                    grandTotalDisplay
+                    grandTotalDisplay,
+                    // Settings
+                    showSettings, isTagEditMode, tags, newTagInput, userId, importUserId,
+                    saveSettings, addTag, deleteTag, copyText, updateUserId
                 };
             }
         }).mount('#app');
