@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
-    <title>Quiet Apartment</title>
+    <title>LateLight</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1659,7 +1659,7 @@
                         }
                     }
 
-                    showToast('Settings saved.');
+                    // showToast('Settings saved.'); // User requested to remove this notification
                 };
 
                 const saveTags = () => localStorage.setItem('qa_tags', JSON.stringify(tags.value));
@@ -1811,7 +1811,7 @@
                         };
                         db.ref(`users/${userId.value}/logs`).push(log);
                         isSaved.value = true;
-                        showToast(`Session Saved: ${tag || 'Focus'} (${formatTimeStr(time.value)})`);
+                        // showToast(`Session Saved: ${tag || 'Focus'} (${formatTimeStr(time.value)})`);
                     }
 
                     // Reset
