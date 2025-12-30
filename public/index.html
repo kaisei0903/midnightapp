@@ -1637,9 +1637,20 @@
                 const saveSettings = () => {
                     localStorage.setItem('qa_settings', JSON.stringify(settings.value));
                     showSettings.value = false;
-                    mode.value = settings.value.mode === 'stopwatch' ? 'countup' : 'pomodoro';
+
+                    const newMode = settings.value.mode === 'stopwatch' ? 'countup' : 'pomodoro';
+                    const modeChanged = mode.value !== newMode;
+                    mode.value = newMode;
+
                     showToast('Settings saved.');
-                    if (!isRunning.value && !isResting.value) resetTimer();
+
+                    // Only reset if mode changed OR if we are cleanly stopped (time is 0).
+                    // This prevents resetting when adding tags while Paused (time > 0).
+                    if (modeChanged) {
+                        resetTimer();
+                    } else if (!isRunning.value && !isResting.value && time.value === 0) {
+                        resetTimer();
+                    }
                 };
 
                 const saveTags = () => localStorage.setItem('qa_tags', JSON.stringify(tags.value));
